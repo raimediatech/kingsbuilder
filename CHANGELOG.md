@@ -1,6 +1,13 @@
 # KingsBuilder Shopify App Changelog
 
-## 2025.06.06 - v0.3.0 (Current)
+## 2025.06.06 - v0.4.0 (Current)
+- Implemented code minification utilities
+- Added caching strategies for improved performance
+- Created page performance metrics tracking
+- Implemented video embedding widget
+- Enhanced widget management interface
+
+## 2025.06.06 - v0.3.0
 - Implemented advanced widgets (custom code, forms, social media)
 - Added image optimization utilities
 - Implemented lazy loading for components and resources

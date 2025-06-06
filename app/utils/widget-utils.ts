@@ -126,7 +126,28 @@ export interface SocialMediaWidget extends WidgetBase {
   settings: SocialMediaWidgetSettings;
 }
 
-export type Widget = ProductWidget | CollectionWidget | CustomCodeWidget | FormWidget | SocialMediaWidget;
+export interface VideoWidgetSettings {
+  videoType: 'youtube' | 'vimeo' | 'shopify' | 'custom';
+  videoId?: string;
+  videoUrl?: string;
+  autoplay: boolean;
+  loop: boolean;
+  muted: boolean;
+  controls: boolean;
+  responsive: boolean;
+  width?: number;
+  height?: number;
+  startTime?: number;
+  endTime?: number;
+  thumbnailUrl?: string;
+}
+
+export interface VideoWidget extends WidgetBase {
+  type: 'video';
+  settings: VideoWidgetSettings;
+}
+
+export type Widget = ProductWidget | CollectionWidget | CustomCodeWidget | FormWidget | SocialMediaWidget | VideoWidget;
 
 /**
  * Generate a unique ID for a widget
@@ -227,6 +248,21 @@ export function createWidget(type: string, title: string): Widget {
           count: 4,
         },
       } as SocialMediaWidget;
+      
+    case 'video':
+      return {
+        ...baseWidget,
+        type: 'video',
+        settings: {
+          videoType: 'youtube',
+          videoId: '',
+          autoplay: false,
+          loop: false,
+          muted: true,
+          controls: true,
+          responsive: true,
+        },
+      } as VideoWidget;
 
     default:
       throw new Error(`Unknown widget type: ${type}`);
@@ -308,6 +344,19 @@ export function generateWidgetPreview(widget: Widget): string {
               ${Array(widget.settings.count || 4).fill(0).map(() => `
                 <div class="social-post"></div>
               `).join('')}
+            </div>
+          </div>
+        </div>
+      `;
+      
+    case 'video':
+      return `
+        <div class="widget-preview video-widget">
+          <h3>${widget.title}</h3>
+          <div class="video-preview">
+            <div class="video-placeholder">
+              <div class="video-play-button"></div>
+              <div class="video-type-label">${widget.settings.videoType.toUpperCase()}</div>
             </div>
           </div>
         </div>

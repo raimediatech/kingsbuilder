@@ -21,7 +21,7 @@ import {
   Box,
   LegacyCard,
 } from "@shopify/polaris";
-import { CodeMajor, FormsMajor, SocialMajor } from "@shopify/polaris-icons";
+import { CodeMajor, FormsMajor, SocialMajor, VideoMajor } from "@shopify/polaris-icons";
 import { TitleBar } from "@shopify/app-bridge-react";
 import { authenticate } from "../shopify.server";
 import type { LoaderFunctionArgs, ActionFunctionArgs } from "@remix-run/node";
@@ -34,6 +34,7 @@ const mockWidgets: Widget[] = [
   createWidget("custom-code", "Header Script"),
   createWidget("form", "Contact Form"),
   createWidget("social-media", "Instagram Feed"),
+  createWidget("video", "Product Video"),
 ];
 
 export const loader = async ({ request }: LoaderFunctionArgs) => {
@@ -91,6 +92,7 @@ export default function AdvancedWidgets() {
     if (selectedTab === 1) return widget.type === "custom-code";
     if (selectedTab === 2) return widget.type === "form";
     if (selectedTab === 3) return widget.type === "social-media";
+    if (selectedTab === 4) return widget.type === "video";
     return false;
   });
   
@@ -132,6 +134,12 @@ export default function AdvancedWidgets() {
       accessibilityLabel: "Social media widgets",
       panelID: "social-media-widgets",
     },
+    {
+      id: "video",
+      content: "Video",
+      accessibilityLabel: "Video widgets",
+      panelID: "video-widgets",
+    },
   ];
   
   const renderWidgetCard = (widget: Widget) => {
@@ -145,6 +153,9 @@ export default function AdvancedWidgets() {
         break;
       case "social-media":
         icon = <Icon source={SocialMajor} />;
+        break;
+      case "video":
+        icon = <Icon source={VideoMajor} />;
         break;
       default:
         icon = null;
@@ -184,6 +195,14 @@ export default function AdvancedWidgets() {
             <BlockStack gap="200">
               <Text variant="bodyMd" as="p">Platform: {(widget as any).settings.platform}</Text>
               <Text variant="bodyMd" as="p">Display type: {(widget as any).settings.displayType}</Text>
+            </BlockStack>
+          )}
+          
+          {widget.type === "video" && (
+            <BlockStack gap="200">
+              <Text variant="bodyMd" as="p">Video type: {(widget as any).settings.videoType}</Text>
+              <Text variant="bodyMd" as="p">Autoplay: {(widget as any).settings.autoplay ? 'Yes' : 'No'}</Text>
+              <Text variant="bodyMd" as="p">Controls: {(widget as any).settings.controls ? 'Yes' : 'No'}</Text>
             </BlockStack>
           )}
         </LegacyCard.Section>
@@ -252,6 +271,15 @@ export default function AdvancedWidgets() {
                   >
                     Create Social Media Widget
                   </Button>
+                  <Button 
+                    onClick={() => {
+                      setWidgetType("video");
+                      setWidgetTitle("Product Video");
+                      setShowCreateModal(true);
+                    }}
+                  >
+                    Create Video Widget
+                  </Button>
                 </InlineStack>
               </BlockStack>
             </Card>
@@ -288,7 +316,9 @@ export default function AdvancedWidgets() {
             ? "Custom Code" 
             : widgetType === "form" 
               ? "Form" 
-              : "Social Media"
+              : widgetType === "social-media"
+                ? "Social Media"
+                : "Video"
         } Widget`}
         primaryAction={{
           content: "Create Widget",
@@ -349,6 +379,44 @@ export default function AdvancedWidgets() {
                 value="instagram"
                 onChange={() => {}}
               />
+            )}
+            
+            {widgetType === "video" && (
+              <>
+                <Select
+                  label="Video Type"
+                  options={[
+                    { label: "YouTube", value: "youtube" },
+                    { label: "Vimeo", value: "vimeo" },
+                    { label: "Shopify", value: "shopify" },
+                    { label: "Custom", value: "custom" },
+                  ]}
+                  value="youtube"
+                  onChange={() => {}}
+                />
+                <TextField
+                  label="Video ID or URL"
+                  value=""
+                  onChange={() => {}}
+                  placeholder="e.g., dQw4w9WgXcQ for YouTube"
+                  helpText="For YouTube or Vimeo, enter the video ID. For custom videos, enter the full URL."
+                />
+                <Checkbox
+                  label="Autoplay video"
+                  checked={false}
+                  onChange={() => {}}
+                />
+                <Checkbox
+                  label="Show video controls"
+                  checked={true}
+                  onChange={() => {}}
+                />
+                <Checkbox
+                  label="Responsive sizing"
+                  checked={true}
+                  onChange={() => {}}
+                />
+              </>
             )}
             
             <Text variant="bodyMd" as="p" color="subdued">
