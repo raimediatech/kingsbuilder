@@ -1,0 +1,16 @@
+{
+  "name": "KingsBuilder",
+  "short_name": "KingsBuilder",
+  "description": "A powerful app for building custom Shopify stores",
+  "start_url": "/app",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#5c6ac4",
+  "icons": [
+    {
+      "src": "/icons/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml"
+    }
+  ]
+}
