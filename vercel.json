@@ -6,21 +6,22 @@
       "use": "@vercel/node"
     },
     {
-      "src": "build/client/**",
+      "src": "public/**",
       "use": "@vercel/static"
     }
   ],
   "routes": [
     {
-      "src": "/build/client/(.*)",
-      "dest": "/build/client/$1"
+      "src": "/icons/(.*)",
+      "dest": "/public/icons/$1"
+    },
+    {
+      "src": "/manifest.json",
+      "dest": "/public/manifest.json"
     },
     {
       "src": "/(.*)",
       "dest": "/api/index.js"
     }
-  ],
-  "env": {
-    "NODE_ENV": "production"
-  }
+  ]
 }

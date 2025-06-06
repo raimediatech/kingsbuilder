@@ -147,7 +147,34 @@ When you're ready to set up your app in production, you can follow [our deployme
 
 When you reach the step for [setting up environment variables](https://shopify.dev/docs/apps/deployment/web#set-env-vars), you also need to set the variable `NODE_ENV=production`.
 
-### Hosting on Vercel
+### Hosting on Vercel with MongoDB
+
+This app is configured to use MongoDB for session storage. To deploy to Vercel:
+
+1. Push your code to GitHub
+2. Connect your GitHub repository to Vercel
+3. Add the following environment variables in Vercel:
+
+```
+SHOPIFY_API_KEY=your_shopify_api_key
+SHOPIFY_API_SECRET=your_shopify_api_secret
+SCOPES=write_products
+SHOPIFY_APP_URL=https://your-vercel-app-url.vercel.app
+NODE_ENV=production
+DATABASE_URL=your_mongodb_connection_string
+```
+
+4. Deploy your app
+5. After the first deployment, update the `SHOPIFY_APP_URL` with your actual Vercel deployment URL and redeploy
+
+#### Troubleshooting Vercel Deployment
+
+If you encounter issues with the deployment:
+
+1. Check the Vercel logs for error messages
+2. Verify that all environment variables are correctly set
+3. Make sure your MongoDB connection string is valid
+4. Check that your Shopify API credentials are correct
 
 Using the Vercel Preset is recommended when hosting your Shopify Remix app on Vercel. You'll also want to ensure imports that would normally come from `@remix-run/node` are imported from `@vercel/remix` instead. Learn more about hosting Remix apps on Vercel [here](https://vercel.com/docs/frameworks/remix).
 
