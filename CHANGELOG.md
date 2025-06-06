@@ -1,6 +1,13 @@
 # KingsBuilder Shopify App Changelog
 
-## 2025.06.06 - v0.2.0 (Current)
+## 2025.06.06 - v0.3.0 (Current)
+- Implemented advanced widgets (custom code, forms, social media)
+- Added image optimization utilities
+- Implemented lazy loading for components and resources
+- Created widget management interface
+- Updated navigation with advanced widgets section
+
+## 2025.06.06 - v0.2.0
 - Implemented Shopify API integration for page publishing
 - Added product and collection widgets functionality
 - Created page management interface with create/edit/delete capabilities

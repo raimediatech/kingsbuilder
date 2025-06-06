@@ -26,6 +26,7 @@ export default function App() {
         </Link>
         <Link to="/app/builder">Page Builder</Link>
         <Link to="/app/products">Products</Link>
+        <Link to="/app/widgets">Advanced Widgets</Link>
         <Link to="/app/templates">Templates</Link>
         <Link to="/app/settings">Settings</Link>
       </NavMenu>
