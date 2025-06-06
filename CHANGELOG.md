@@ -1,6 +1,12 @@
 # KingsBuilder Shopify App Changelog
 
-## 2025.06.06 - v0.1.0 (Current)
+## 2025.06.06 - v0.2.0 (Current)
+- Implemented Shopify API integration for page publishing
+- Added product and collection widgets functionality
+- Created page management interface with create/edit/delete capabilities
+- Added navigation for new product widgets section
+
+## 2025.06.06 - v0.1.0
 - Fixed 500 error on Vercel deployment
 - Implemented MongoDB session storage
 - Created simplified API handler for Vercel
