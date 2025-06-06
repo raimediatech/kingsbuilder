@@ -1,17 +1,25 @@
-# @shopify/shopify-app-template-remix
+# KingsBuilder Shopify App Changelog
 
-## 2025.03.18
--[#998](https://github.com/Shopify/shopify-app-template-remix/pull/998) Update to Vite 6
+## 2025.06.06 - v0.1.0 (Current)
+- Fixed 500 error on Vercel deployment
+- Implemented MongoDB session storage
+- Created simplified API handler for Vercel
+- Added landing page for initial deployment
+- Updated documentation with deployment instructions
+- Successfully deployed to Vercel with "Coming Soon" page
+- Updated ROADMAP.md to reflect current progress
+
+## 2025.03.18 - Template Updates
+- Update to Vite 6
 
 ## 2025.03.01
-- [#982](https://github.com/Shopify/shopify-app-template-remix/pull/982) Add Shopify Dev Assistant extension to the VSCode extension recommendations
+- Add Shopify Dev Assistant extension to the VSCode extension recommendations
 
 ## 2025.01.31
-- [#952](https://github.com/Shopify/shopify-app-template-remix/pull/952) Update to Shopify App API v2025-01
+- Update to Shopify App API v2025-01
 
 ## 2025.01.23
-
-- [#923](https://github.com/Shopify/shopify-app-template-remix/pull/923) Update `@shopify/shopify-app-session-storage-prisma` to v6.0.0
+- Update `@shopify/shopify-app-session-storage-prisma` to v6.0.0
 
 ## 2025.01.8
 
