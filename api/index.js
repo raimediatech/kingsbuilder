@@ -47,13 +47,32 @@ app.get('/api/templates', (req, res) => {
 
 app.get('/api/analytics/overview', (req, res) => {
   res.json({ 
-    totalViews: 1247, 
+    totalViews: 2847, 
     totalPages: 3, 
     publishedPages: 2,
     draftPages: 1,
+    uniqueVisitors: 1923,
+    bounceRate: 32.5,
+    avgTimeOnPage: 145,
     topPages: [
-      { handle: 'about-us', title: 'About Us', views: 456 },
-      { handle: 'faq', title: 'FAQ', views: 234 }
+      { handle: 'about-us', title: 'About Us', views: 1456, visitors: 892, bounceRate: 28.3 },
+      { handle: 'faq', title: 'FAQ', views: 834, visitors: 623, bounceRate: 35.7 },
+      { handle: 'contact', title: 'Contact', views: 557, visitors: 408, bounceRate: 41.2 }
+    ],
+    trafficSources: [
+      { source: 'Direct', visits: 1234, percentage: 43.4 },
+      { source: 'Google Search', visits: 892, percentage: 31.3 },
+      { source: 'Social Media', visits: 456, percentage: 16.0 },
+      { source: 'Email', visits: 265, percentage: 9.3 }
+    ],
+    pageViewsOverTime: [
+      { date: '2024-01-01', views: 234 },
+      { date: '2024-01-02', views: 345 },
+      { date: '2024-01-03', views: 456 },
+      { date: '2024-01-04', views: 567 },
+      { date: '2024-01-05', views: 432 },
+      { date: '2024-01-06', views: 543 },
+      { date: '2024-01-07', views: 270 }
     ]
   });
 });
@@ -91,7 +110,22 @@ app.get('*', (req, res) => {
           <meta name="viewport" content="width=device-width, initial-scale=1.0">
           <style>
             body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; margin: 0; padding: 0; background: #f6f6f7; }
-            .container { max-width: 1200px; margin: 0 auto; padding: 20px; }
+            .app-layout { display: flex; min-height: 100vh; }
+            .sidebar { width: 250px; background: #ffffff; border-right: 1px solid #e1e3e5; box-shadow: 2px 0 4px rgba(0,0,0,0.1); }
+            .sidebar-header { padding: 24px 20px; border-bottom: 1px solid #e1e3e5; }
+            .sidebar-header h2 { margin: 0; color: #2c6ecb; font-size: 1.5rem; }
+            .sidebar-nav { padding: 20px 0; }
+            .nav-item { display: flex; align-items: center; padding: 12px 20px; color: #374151; text-decoration: none; transition: all 0.2s; }
+            .nav-item:hover { background: #f3f4f6; color: #2c6ecb; }
+            .nav-item.active { background: #eff6ff; color: #2c6ecb; border-right: 3px solid #2c6ecb; }
+            .nav-icon { margin-right: 12px; font-size: 1.1rem; }
+            .main-content { flex: 1; padding: 24px; overflow-y: auto; }
+            .content-section { display: none; }
+            .content-section.active { display: block; }
+            .page-header { margin-bottom: 24px; }
+            .page-header h1 { margin: 0 0 8px 0; font-size: 2rem; color: #1f2937; }
+            .page-header p { margin: 0; color: #6b7280; }
+            .stats-overview { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px; margin-bottom: 24px; }
             .card { background: white; padding: 24px; border-radius: 12px; margin-bottom: 20px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); border: 1px solid #e1e3e5; }
             .header { background: linear-gradient(135deg, #2c6ecb 0%, #1a5cb8 100%); color: white; padding: 32px; border-radius: 12px; text-align: center; margin-bottom: 24px; }
             .header h1 { margin: 0 0 8px 0; font-size: 2.5rem; font-weight: 700; }
@@ -127,26 +161,191 @@ app.get('*', (req, res) => {
           </style>
         </head>
         <body>
-          <div class="container">
-            <div class="header">
-              <h1>🏗️ KingsBuilder</h1>
-              <p>Page Builder for Shopify</p>
+          <div class="app-layout">
+            <!-- Sidebar Navigation -->
+            <div class="sidebar">
+              <div class="sidebar-header">
+                <h2>🏗️ KingsBuilder</h2>
+              </div>
+              <nav class="sidebar-nav">
+                <a href="#" class="nav-item active" onclick="showSection('dashboard')">
+                  <span class="nav-icon">📊</span>
+                  Dashboard
+                </a>
+                <a href="#" class="nav-item" onclick="showSection('pages')">
+                  <span class="nav-icon">📄</span>
+                  Pages
+                </a>
+                <a href="#" class="nav-item" onclick="showSection('templates')">
+                  <span class="nav-icon">📋</span>
+                  Templates
+                </a>
+                <a href="#" class="nav-item" onclick="showSection('analytics')">
+                  <span class="nav-icon">📈</span>
+                  Analytics
+                </a>
+                <a href="#" class="nav-item" onclick="showSection('settings')">
+                  <span class="nav-icon">⚙️</span>
+                  Settings
+                </a>
+              </nav>
             </div>
             
-            <div class="card">
-              <h2>🎉 Successfully Deployed!</h2>
-              <p class="status">✅ App is live and working</p>
-              <p><strong>Shop:</strong> ${shop}</p>
-              <p><strong>Status:</strong> Connected</p>
-              <p><strong>Version:</strong> 1.0.0</p>
+            <!-- Main Content -->
+            <div class="main-content">
+              <!-- Dashboard Section -->
+              <div id="dashboard-section" class="content-section active">
+                <div class="page-header">
+                  <h1>Dashboard</h1>
+                  <p>Welcome to KingsBuilder - Your Shopify Page Builder</p>
+                </div>
+                
+                <div class="stats-overview">
+                  <div class="stat-card">
+                    <div class="stat-number" id="total-pages">0</div>
+                    <div class="stat-label">Total Pages</div>
+                  </div>
+                  <div class="stat-card">
+                    <div class="stat-number" id="published-pages">0</div>
+                    <div class="stat-label">Published</div>
+                  </div>
+                  <div class="stat-card">
+                    <div class="stat-number" id="draft-pages">0</div>
+                    <div class="stat-label">Drafts</div>
+                  </div>
+                  <div class="stat-card">
+                    <div class="stat-number" id="total-views">0</div>
+                    <div class="stat-label">Total Views</div>
+                  </div>
+                </div>
+                
+                <div class="card">
+                  <h3>Quick Actions</h3>
+                  <button class="button" onclick="showCreatePageModal()">+ Create New Page</button>
+                  <button class="button" onclick="showSection('templates')">Browse Templates</button>
+                  <button class="button" onclick="showSection('analytics')">View Analytics</button>
+                </div>
+                
+                <div class="card">
+                  <h3>Recent Pages</h3>
+                  <div id="recent-pages">
+                    <!-- Recent pages will be loaded here -->
+                  </div>
+                </div>
+              </div>
+              
+              <!-- Pages Section -->
+              <div id="pages-section" class="content-section">
+                <div class="page-header">
+                  <h1>Pages</h1>
+                  <button class="button" onclick="showCreatePageModal()">+ Create New Page</button>
+                </div>
+                
+                <div class="card">
+                  <div id="all-pages">
+                    <!-- All pages will be loaded here -->
+                  </div>
+                </div>
+              </div>
+              
+              <!-- Templates Section -->
+              <div id="templates-section" class="content-section">
+                <div class="page-header">
+                  <h1>Templates</h1>
+                  <p>Choose from our professionally designed templates</p>
+                </div>
+                
+                <div class="templates-grid" id="templates-list">
+                  <!-- Templates will be loaded here -->
+                </div>
+              </div>
+              
+              <!-- Analytics Section -->
+              <div id="analytics-section" class="content-section">
+                <div class="page-header">
+                  <h1>Analytics</h1>
+                  <p>Track your page performance</p>
+                </div>
+                
+                <div class="stats-overview">
+                  <div class="stat-card">
+                    <div class="stat-number" id="analytics-views">0</div>
+                    <div class="stat-label">Total Page Views</div>
+                  </div>
+                  <div class="stat-card">
+                    <div class="stat-number" id="analytics-visitors">0</div>
+                    <div class="stat-label">Unique Visitors</div>
+                  </div>
+                  <div class="stat-card">
+                    <div class="stat-number" id="analytics-bounce">0%</div>
+                    <div class="stat-label">Bounce Rate</div>
+                  </div>
+                  <div class="stat-card">
+                    <div class="stat-number" id="analytics-time">0s</div>
+                    <div class="stat-label">Avg. Time on Page</div>
+                  </div>
+                </div>
+                
+                <div class="card">
+                  <h3>Top Performing Pages</h3>
+                  <div id="top-pages">
+                    <!-- Top pages will be loaded here -->
+                  </div>
+                </div>
+                
+                <div class="card">
+                  <h3>Traffic Sources</h3>
+                  <div id="traffic-sources">
+                    <!-- Traffic sources will be loaded here -->
+                  </div>
+                </div>
+              </div>
+              
+              <!-- Settings Section -->
+              <div id="settings-section" class="content-section">
+                <div class="page-header">
+                  <h1>Settings</h1>
+                  <p>Configure your KingsBuilder app</p>
+                </div>
+                
+                <div class="card">
+                  <h3>App Configuration</h3>
+                  <div class="form-group">
+                    <label>Shop Domain:</label>
+                    <input type="text" value="${shop}" readonly>
+                  </div>
+                  <div class="form-group">
+                    <label>App Status:</label>
+                    <span class="status">✅ Connected</span>
+                  </div>
+                  <div class="form-group">
+                    <label>Version:</label>
+                    <span>1.0.0</span>
+                  </div>
+                </div>
+                
+                <div class="card">
+                  <h3>Page Settings</h3>
+                  <div class="form-group">
+                    <label>
+                      <input type="checkbox" checked> Auto-publish pages
+                    </label>
+                  </div>
+                  <div class="form-group">
+                    <label>
+                      <input type="checkbox" checked> Enable analytics tracking
+                    </label>
+                  </div>
+                  <div class="form-group">
+                    <label>
+                      <input type="checkbox"> Enable SEO optimization
+                    </label>
+                  </div>
+                  <button class="button">Save Settings</button>
+                </div>
+              </div>
             </div>
-            
-            <div class="card">
-              <h3>Quick Actions</h3>
-              <button class="button" onclick="showCreatePage()">+ Create New Page</button>
-              <button class="button" onclick="showTemplates()">📋 Browse Templates</button>
-              <button class="button" onclick="showAnalytics()">📊 View Analytics</button>
-            </div>
+          </div>
             
             <!-- Create Page Modal -->
             <div id="createPageModal" class="modal" style="display: none;">
@@ -213,23 +412,111 @@ app.get('*', (req, res) => {
           </div>
           
           <script>
-            // Load pages on page load
+            // Load data on page load
             document.addEventListener('DOMContentLoaded', function() {
+              loadDashboardData();
               loadPages();
+              loadTemplates();
             });
             
-            function showCreatePage() {
+            function showSection(sectionName) {
+              // Hide all sections
+              document.querySelectorAll('.content-section').forEach(section => {
+                section.classList.remove('active');
+              });
+              
+              // Remove active class from all nav items
+              document.querySelectorAll('.nav-item').forEach(item => {
+                item.classList.remove('active');
+              });
+              
+              // Show selected section
+              document.getElementById(sectionName + '-section').classList.add('active');
+              
+              // Add active class to clicked nav item
+              event.target.classList.add('active');
+              
+              // Load section-specific data
+              if (sectionName === 'analytics') {
+                loadAnalyticsData();
+              } else if (sectionName === 'templates') {
+                loadTemplates();
+              } else if (sectionName === 'pages') {
+                loadPages();
+              }
+            }
+            
+            async function loadDashboardData() {
+              try {
+                const response = await fetch('/api/analytics/overview');
+                const data = await response.json();
+                
+                document.getElementById('total-pages').textContent = data.totalPages;
+                document.getElementById('published-pages').textContent = data.publishedPages;
+                document.getElementById('draft-pages').textContent = data.draftPages;
+                document.getElementById('total-views').textContent = data.totalViews.toLocaleString();
+                
+                // Load recent pages
+                const recentPages = document.getElementById('recent-pages');
+                recentPages.innerHTML = data.topPages.slice(0, 3).map(page => \`
+                  <div class="page-item">
+                    <div class="page-info">
+                      <h4>\${page.title}</h4>
+                      <p>Handle: \${page.handle} • \${page.views} views</p>
+                    </div>
+                    <span style="color: #2c6ecb; font-weight: bold;">\${page.views} views</span>
+                  </div>
+                \`).join('');
+              } catch (error) {
+                console.error('Error loading dashboard data:', error);
+              }
+            }
+            
+            function showCreatePageModal() {
               document.getElementById('createPageModal').style.display = 'flex';
             }
             
-            function showTemplates() {
-              document.getElementById('templatesModal').style.display = 'flex';
-              loadTemplates();
-            }
-            
-            function showAnalytics() {
-              document.getElementById('analyticsModal').style.display = 'flex';
-              loadAnalytics();
+            async function loadAnalyticsData() {
+              try {
+                const response = await fetch('/api/analytics/overview');
+                const data = await response.json();
+                
+                document.getElementById('analytics-views').textContent = data.totalViews.toLocaleString();
+                document.getElementById('analytics-visitors').textContent = data.uniqueVisitors.toLocaleString();
+                document.getElementById('analytics-bounce').textContent = data.bounceRate + '%';
+                document.getElementById('analytics-time').textContent = data.avgTimeOnPage + 's';
+                
+                // Load top pages
+                const topPages = document.getElementById('top-pages');
+                topPages.innerHTML = data.topPages.map(page => \`
+                  <div class="page-item">
+                    <div class="page-info">
+                      <h4>\${page.title}</h4>
+                      <p>Handle: \${page.handle} • Bounce Rate: \${page.bounceRate}%</p>
+                    </div>
+                    <div style="text-align: right;">
+                      <div style="font-weight: bold; color: #2c6ecb;">\${page.views} views</div>
+                      <div style="font-size: 12px; color: #6b7280;">\${page.visitors} visitors</div>
+                    </div>
+                  </div>
+                \`).join('');
+                
+                // Load traffic sources
+                const trafficSources = document.getElementById('traffic-sources');
+                trafficSources.innerHTML = data.trafficSources.map(source => \`
+                  <div class="page-item">
+                    <div class="page-info">
+                      <h4>\${source.source}</h4>
+                      <p>\${source.visits} visits</p>
+                    </div>
+                    <div style="text-align: right;">
+                      <div style="font-weight: bold; color: #2c6ecb;">\${source.percentage}%</div>
+                    </div>
+                  </div>
+                \`).join('');
+              } catch (error) {
+                console.error('Error loading analytics data:', error);
+              }
             }
             
             function closeModal(modalId) {
@@ -264,6 +551,7 @@ app.get('*', (req, res) => {
                   alert('Page created successfully!');
                   closeModal('createPageModal');
                   loadPages();
+                  loadDashboardData();
                   
                   // Clear form
                   document.getElementById('pageTitle').value = '';
@@ -282,16 +570,29 @@ app.get('*', (req, res) => {
                 const response = await fetch('/api/pages');
                 const pages = await response.json();
                 
-                const pagesList = document.getElementById('pagesList');
-                pagesList.innerHTML = pages.map(page => \`
+                const pageHTML = pages.map(page => \`
                   <div class="page-item">
                     <div class="page-info">
                       <h4>\${page.title}</h4>
                       <p>Handle: \${page.handle} • Created: \${page.createdAt}</p>
                     </div>
-                    <span class="page-status status-\${page.status}">\${page.status}</span>
+                    <div style="display: flex; align-items: center; gap: 10px;">
+                      <span class="page-status status-\${page.status}">\${page.status}</span>
+                      <button class="button-secondary" style="padding: 6px 12px; font-size: 12px;">Edit</button>
+                    </div>
                   </div>
                 \`).join('');
+                
+                // Update both dashboard and pages section
+                const allPagesElement = document.getElementById('all-pages');
+                if (allPagesElement) {
+                  allPagesElement.innerHTML = pageHTML;
+                }
+                
+                const pagesListElement = document.getElementById('pagesList');
+                if (pagesListElement) {
+                  pagesListElement.innerHTML = pageHTML;
+                }
               } catch (error) {
                 console.error('Error loading pages:', error);
               }
@@ -302,14 +603,27 @@ app.get('*', (req, res) => {
                 const response = await fetch('/api/templates');
                 const templates = await response.json();
                 
-                const templatesGrid = document.getElementById('templatesGrid');
-                templatesGrid.innerHTML = templates.map(template => \`
+                const templateHTML = templates.map(template => \`
                   <div class="template-card" onclick="selectTemplate('\${template.id}')">
                     <h4>\${template.name}</h4>
                     <p>\${template.description}</p>
-                    <small style="color: #2c6ecb; font-weight: 600;">\${template.category}</small>
+                    <small style="color: #2c6ecb; font-weight: 600; text-transform: uppercase;">\${template.category}</small>
+                    <div style="margin-top: 12px;">
+                      <button class="button" style="width: 100%; margin: 0;">Use Template</button>
+                    </div>
                   </div>
                 \`).join('');
+                
+                // Update both modal and templates section
+                const templatesGridElement = document.getElementById('templatesGrid');
+                if (templatesGridElement) {
+                  templatesGridElement.innerHTML = templateHTML;
+                }
+                
+                const templatesListElement = document.getElementById('templates-list');
+                if (templatesListElement) {
+                  templatesListElement.innerHTML = templateHTML;
+                }
               } catch (error) {
                 console.error('Error loading templates:', error);
               }
@@ -318,52 +632,24 @@ app.get('*', (req, res) => {
             function selectTemplate(templateId) {
               document.getElementById('pageTemplate').value = templateId;
               closeModal('templatesModal');
-              showCreatePage();
-            }
-            
-            async function loadAnalytics() {
-              try {
-                const response = await fetch('/api/analytics/overview');
-                const analytics = await response.json();
-                
-                const analyticsContent = document.getElementById('analyticsContent');
-                analyticsContent.innerHTML = \`
-                  <div class="stats-grid">
-                    <div class="stat-card">
-                      <div class="stat-number">\${analytics.totalViews}</div>
-                      <div class="stat-label">Total Views</div>
-                    </div>
-                    <div class="stat-card">
-                      <div class="stat-number">\${analytics.totalPages}</div>
-                      <div class="stat-label">Total Pages</div>
-                    </div>
-                    <div class="stat-card">
-                      <div class="stat-number">\${analytics.publishedPages}</div>
-                      <div class="stat-label">Published</div>
-                    </div>
-                    <div class="stat-card">
-                      <div class="stat-number">\${analytics.draftPages}</div>
-                      <div class="stat-label">Drafts</div>
-                    </div>
-                  </div>
-                  
-                  <h4>Top Performing Pages</h4>
-                  <div>
-                    \${analytics.topPages.map(page => \`
-                      <div class="page-item">
-                        <div class="page-info">
-                          <h4>\${page.title}</h4>
-                          <p>Handle: \${page.handle}</p>
-                        </div>
-                        <span style="font-weight: bold; color: #2c6ecb;">\${page.views} views</span>
-                      </div>
-                    \`).join('')}
-                  </div>
-                \`;
-              } catch (error) {
-                console.error('Error loading analytics:', error);
+              showCreatePageModal();
+              
+              // Pre-fill template name as page title
+              const templates = {
+                'blank': 'New Page',
+                'about': 'About Us',
+                'contact': 'Contact Us',
+                'faq': 'Frequently Asked Questions',
+                'landing': 'Landing Page'
+              };
+              
+              if (templates[templateId]) {
+                document.getElementById('pageTitle').value = templates[templateId];
+                updateHandle();
               }
             }
+            
+
             
             // Close modal when clicking outside
             window.onclick = function(event) {
