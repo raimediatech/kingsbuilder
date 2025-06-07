@@ -1,28 +1,3 @@
-# Learn more about configuring your app at https://shopify.dev/docs/apps/tools/cli/configuration
+# This file stores configurations for your Shopify app.
 
-client_id = "128d69fb5441ba3eda3ae4694c71b175"
-application_url = "https://grave-pirates-luxury-compete.trycloudflare.com"
-embedded = true
-name = "KingsBuilder"
-handle = "kingsbuilder"
-
-[webhooks]
-api_version = "2025-04"
-
-[access_scopes]
-# Learn more at https://shopify.dev/docs/apps/tools/cli/configuration#access_scopes
-scopes = "write_products"
-
-[auth]
-redirect_urls = [
-  "https://grave-pirates-luxury-compete.trycloudflare.com/auth/callback",
-  "https://grave-pirates-luxury-compete.trycloudflare.com/auth/shopify/callback",
-  "https://grave-pirates-luxury-compete.trycloudflare.com/api/auth/callback"
-]
-
-[pos]
-embedded = false
-
-[build]
-dev_store_url = "kingsbuilder.myshopify.com"
-automatically_update_urls_on_dev = true
+scopes = "write_products,read_products,write_customers,read_customers,write_orders,read_orders"
