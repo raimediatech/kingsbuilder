@@ -2,14 +2,14 @@
   "name": "KingsBuilder",
   "private": true,
   "scripts": {
-    "build": "remix vite:build",
+    "build": "remix build",
     "dev": "shopify app dev",
     "config:link": "shopify app config link",
     "generate": "shopify app generate",
     "deploy": "shopify app deploy",
     "config:use": "shopify app config use",
     "env": "shopify app env",
-    "start": "node server.js",
+    "start": "remix-serve ./build/index.js",
     "docker-start": "npm run start",
     "setup": "echo \"Using MongoDB, no migrations needed\"",
     "lint": "eslint --cache --cache-location ./node_modules/.cache/eslint .",
@@ -19,8 +19,7 @@
     "vite": "vite",
     "test": "jest",
     "test:watch": "jest --watch",
-    "test:coverage": "jest --coverage",
-    "vercel-build": "remix vite:build"
+    "test:coverage": "jest --coverage"
   },
   "type": "module",
   "engines": {
@@ -30,7 +29,6 @@
     "@prisma/client": "^6.9.0",
     "@remix-run/dev": "^2.16.1",
     "@remix-run/express": "^2.16.1",
-    "@remix-run/fs-routes": "^2.16.1",
     "@remix-run/node": "^2.16.1",
     "@remix-run/react": "^2.16.1",
     "@remix-run/serve": "^2.16.1",
@@ -44,12 +42,10 @@
     "mongodb": "^6.17.0",
     "prisma": "^6.9.0",
     "react": "^18.2.0",
-    "react-dom": "^18.2.0",
-    "vite-tsconfig-paths": "^5.0.11"
+    "react-dom": "^18.2.0"
   },
   "devDependencies": {
     "@remix-run/eslint-config": "^2.16.1",
-    "@remix-run/route-config": "^2.16.1",
     "@shopify/api-codegen-preset": "^1.1.1",
     "@testing-library/jest-dom": "^6.4.2",
     "@testing-library/react": "^14.2.1",
@@ -66,8 +62,7 @@
     "jest-environment-jsdom": "^29.7.0",
     "prettier": "^3.2.4",
     "ts-jest": "^29.1.2",
-    "typescript": "^5.2.2",
-    "vite": "^6.2.2"
+    "typescript": "^5.2.2"
   },
   "workspaces": [
     "extensions/*"
@@ -75,17 +70,5 @@
   "trustedDependencies": [
     "@shopify/plugin-cloudflare"
   ],
-  "resolutions": {
-    "@graphql-tools/url-loader": "8.0.16",
-    "@graphql-codegen/client-preset": "4.7.0",
-    "@graphql-codegen/typescript-operations": "4.5.0",
-    "minimatch": "9.0.5"
-  },
-  "overrides": {
-    "@graphql-tools/url-loader": "8.0.16",
-    "@graphql-codegen/client-preset": "4.7.0",
-    "@graphql-codegen/typescript-operations": "4.5.0",
-    "minimatch": "9.0.5"
-  },
   "author": "AJ"
 }
