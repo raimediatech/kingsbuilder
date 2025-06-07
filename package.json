@@ -19,7 +19,8 @@
     "vite": "vite",
     "test": "jest",
     "test:watch": "jest --watch",
-    "test:coverage": "jest --coverage"
+    "test:coverage": "jest --coverage",
+    "vercel-build": "echo \"No build step needed for static site\""
   },
   "type": "module",
   "engines": {

@@ -1,26 +1,19 @@
+// Simple static file server for the public directory
 import express from 'express';
-import { createRequestHandler } from '@remix-run/express';
-import { installGlobals } from '@remix-run/node';
+import path from 'path';
+import { fileURLToPath } from 'url';
 
-// Install Remix globals
-installGlobals();
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 const app = express();
 
-// Serve static files
-app.use(express.static('public'));
+// Serve static files from the public directory
+app.use(express.static(path.join(__dirname, '../public')));
 
-// Redirect root to /app
-app.get('/', (req, res) => {
-  res.redirect('/app');
+// Redirect all requests to index.html
+app.get('*', (req, res) => {
+  res.sendFile(path.join(__dirname, '../public/index.html'));
 });
-
-// Handle Remix requests
-app.all(
-  '*',
-  createRequestHandler({
-    build: await import('../build/index.js'),
-  })
-);
 
 export default app;
