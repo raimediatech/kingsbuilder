@@ -1,5 +1,6 @@
 {
   "version": 2,
+  "buildCommand": "npm run vercel-build",
   "builds": [
     {
       "src": "api/index.js",
@@ -20,10 +21,6 @@
       "dest": "/public/manifest.json"
     },
     {
-      "src": "^/$",
-      "dest": "/api/index.js"
-    },
-    {
       "src": "/(.*)",
       "dest": "/api/index.js"
     }
@@ -31,6 +28,9 @@
   "env": {
     "DATABASE_URL": "mongodb+srv://kingsbuilder_admin:2BAvGrHLw63hWd3@cluster0.3wvn3jk.mongodb.net/kingsbuilder?retryWrites=true&w=majority&appName=Cluster0",
     "SHOPIFY_APP_URL": "https://kingsbuilder-git-main-ajay-rais-projects.vercel.app",
-    "NODE_ENV": "production"
+    "NODE_ENV": "production",
+    "SHOPIFY_API_KEY": "your_shopify_api_key",
+    "SHOPIFY_API_SECRET": "your_shopify_api_secret",
+    "SCOPES": "write_products,read_products,write_customers,read_customers,write_orders,read_orders"
   }
 }

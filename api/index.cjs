@@ -1,14 +1,7 @@
-import { createRequestHandler } from "@remix-run/express";
-import { installGlobals } from "@remix-run/node";
-import express from "express";
-import path from "path";
-import { fileURLToPath } from "url";
-
-// Install Remix globals
-installGlobals();
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
+// CommonJS version of the API entry point for Vercel
+const { createRequestHandler } = require("@remix-run/express");
+const express = require("express");
+const path = require("path");
 
 const app = express();
 
@@ -21,7 +14,7 @@ app.get("/", (req, res) => {
   if (req.query.shop || req.query.hmac || req.query.host) {
     // If it's from Shopify, handle it with Remix
     return createRequestHandler({
-      build: require("../build"),
+      build: require("../build")
     })(req, res);
   }
   
@@ -33,8 +26,8 @@ app.get("/", (req, res) => {
 app.all(
   "*",
   createRequestHandler({
-    build: require("../build"),
+    build: require("../build")
   })
 );
 
-export default app;
+module.exports = app;

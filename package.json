@@ -20,7 +20,7 @@
     "test": "jest",
     "test:watch": "jest --watch",
     "test:coverage": "jest --coverage",
-    "vercel-build": "echo \"No build step needed for static site\""
+    "vercel-build": "remix vite:build"
   },
   "type": "module",
   "engines": {
@@ -29,6 +29,7 @@
   "dependencies": {
     "@prisma/client": "^6.9.0",
     "@remix-run/dev": "^2.16.1",
+    "@remix-run/express": "^2.16.1",
     "@remix-run/fs-routes": "^2.16.1",
     "@remix-run/node": "^2.16.1",
     "@remix-run/react": "^2.16.1",
