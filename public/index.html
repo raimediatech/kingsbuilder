@@ -5,11 +5,11 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>KingsBuilder - Shopify Page Builder</title>
   <script>
-    // Check if this is a Shopify request
+    // Check if this is a Shopify request and redirect to the app
     const urlParams = new URLSearchParams(window.location.search);
     if (urlParams.has('shop') || urlParams.has('host')) {
-      // Redirect to the app route
-      window.location.href = "/app" + window.location.search;
+      // This is a Shopify request - redirect to root which will handle authentication
+      window.location.href = "/" + window.location.search;
     }
   </script>
   <style>
@@ -87,14 +87,41 @@
       color: #2c6ecb;
       margin-top: 0;
     }
-    .status {
-      display: inline-block;
-      padding: 8px 16px;
-      background-color: #ebf5ff;
+    .pricing {
+      margin-top: 40px;
+      padding: 20px;
+      background-color: #f0f7ff;
+      border-radius: 8px;
+    }
+    .pricing h2 {
       color: #2c6ecb;
-      border-radius: 20px;
-      font-weight: 500;
+      margin-top: 0;
+    }
+    .pricing-options {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 20px;
       margin-top: 20px;
+    }
+    .pricing-option {
+      flex: 1;
+      min-width: 200px;
+      padding: 20px;
+      background-color: white;
+      border-radius: 8px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+      text-align: center;
+    }
+    .price {
+      font-size: 24px;
+      font-weight: bold;
+      color: #2c6ecb;
+      margin: 10px 0;
+    }
+    .period {
+      color: #666;
+      font-size: 14px;
     }
   </style>
 </head>
@@ -105,7 +132,7 @@
     <p>Welcome to KingsBuilder - The Ultimate Page Builder for Shopify</p>
     <p>Create beautiful, customized pages for your Shopify store without writing any code.</p>
     
-    <a href="https://admin.shopify.com/store/kingsbuilder/apps/kingsbuilder?embedded=1" class="button">Open in Shopify</a>
+    <a href="https://admin.shopify.com/store/kingsbuilder/apps/kingsbuilder?embedded=1&host=a2luZ3NidWlsZGVyLm15c2hvcGlmeS5jb20vYWRtaW4" class="button">Open in Shopify</a>
     
     <div class="features">
       <div class="feature">
@@ -121,6 +148,46 @@
         <p>All pages look great on any device.</p>
       </div>
     </div>
+    
+    <div class="pricing">
+      <h2>Simple Pricing</h2>
+      <p>Choose the plan that works best for your business</p>
+      
+      <div class="pricing-options">
+        <div class="pricing-option">
+          <h3>Starter</h3>
+          <div class="price">$9.99<span class="period">/month</span></div>
+          <p>Perfect for small stores just getting started</p>
+          <ul style="text-align: left;">
+            <li>Up to 5 custom pages</li>
+            <li>Basic templates</li>
+            <li>Email support</li>
+          </ul>
+        </div>
+        
+        <div class="pricing-option" style="transform: scale(1.05); border: 2px solid #2c6ecb;">
+          <h3>Professional</h3>
+          <div class="price">$19.99<span class="period">/month</span></div>
+          <p>For growing businesses with more needs</p>
+          <ul style="text-align: left;">
+            <li>Unlimited custom pages</li>
+            <li>All templates</li>
+            <li>Priority support</li>
+            <li>Advanced analytics</li>
+          </ul>
+        </div>
+      </div>
+    </div>
   </div>
+  
+  <script>
+    // Track page view
+    console.log('KingsBuilder landing page loaded');
+    
+    // Add click tracking to buttons
+    document.querySelector('.button').addEventListener('click', function() {
+      console.log('Open in Shopify button clicked');
+    });
+  </script>
 </body>
 </html>

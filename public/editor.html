@@ -1,0 +1,885 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>KingsBuilder - Page Editor</title>
+  <link rel="stylesheet" href="https://unpkg.com/@shopify/polaris@12.0.0/build/esm/styles.css" />
+  <script src="https://unpkg.com/@shopify/app-bridge@3.7.9/umd/index.js"></script>
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+      margin: 0;
+      padding: 0;
+      color: #202223;
+      background-color: #f6f6f7;
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+    .editor-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 16px 20px;
+      background-color: #ffffff;
+      border-bottom: 1px solid #ddd;
+      z-index: 100;
+    }
+    .logo {
+      font-size: 20px;
+      font-weight: bold;
+      color: #2c6ecb;
+    }
+    .editor-actions {
+      display: flex;
+      gap: 10px;
+    }
+    .button {
+      display: inline-block;
+      padding: 8px 16px;
+      background-color: #2c6ecb;
+      color: white;
+      border: none;
+      border-radius: 4px;
+      font-size: 14px;
+      font-weight: 500;
+      cursor: pointer;
+      text-decoration: none;
+    }
+    .button.secondary {
+      background-color: white;
+      color: #2c6ecb;
+      border: 1px solid #2c6ecb;
+    }
+    .button:hover {
+      background-color: #1a5cb8;
+    }
+    .button.secondary:hover {
+      background-color: #f5f9ff;
+    }
+    .editor-container {
+      display: flex;
+      flex: 1;
+      height: calc(100vh - 60px);
+      overflow: hidden;
+    }
+    .sidebar {
+      width: 300px;
+      background-color: white;
+      border-right: 1px solid #ddd;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+    }
+    .sidebar-tabs {
+      display: flex;
+      border-bottom: 1px solid #ddd;
+    }
+    .sidebar-tab {
+      flex: 1;
+      text-align: center;
+      padding: 12px;
+      cursor: pointer;
+      border-bottom: 2px solid transparent;
+    }
+    .sidebar-tab.active {
+      border-bottom-color: #2c6ecb;
+      color: #2c6ecb;
+    }
+    .sidebar-content {
+      padding: 16px;
+      flex: 1;
+      overflow-y: auto;
+    }
+    .element-category {
+      margin-bottom: 20px;
+    }
+    .element-category h3 {
+      margin-top: 0;
+      margin-bottom: 10px;
+      font-size: 16px;
+      color: #637381;
+    }
+    .elements-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 10px;
+    }
+    .element-item {
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      padding: 10px;
+      text-align: center;
+      cursor: move;
+      background-color: white;
+      transition: transform 0.2s, box-shadow 0.2s;
+    }
+    .element-item:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    }
+    .element-item i {
+      display: block;
+      font-size: 24px;
+      margin-bottom: 5px;
+      color: #2c6ecb;
+    }
+    .canvas-container {
+      flex: 1;
+      padding: 20px;
+      overflow-y: auto;
+      background-color: #f6f6f7;
+    }
+    .canvas {
+      background-color: white;
+      border-radius: 8px;
+      min-height: 1000px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+      padding: 20px;
+      margin: 0 auto;
+      max-width: 1200px;
+    }
+    .dropzone {
+      min-height: 100px;
+      border: 2px dashed #ddd;
+      border-radius: 4px;
+      margin-bottom: 20px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #637381;
+      transition: background-color 0.2s;
+    }
+    .dropzone.drag-over {
+      background-color: #f5f9ff;
+      border-color: #2c6ecb;
+    }
+    .properties-panel {
+      width: 300px;
+      background-color: white;
+      border-left: 1px solid #ddd;
+      padding: 16px;
+      overflow-y: auto;
+    }
+    .properties-panel h3 {
+      margin-top: 0;
+      margin-bottom: 16px;
+      font-size: 16px;
+      color: #202223;
+    }
+    .property-group {
+      margin-bottom: 20px;
+    }
+    .property-group h4 {
+      margin-top: 0;
+      margin-bottom: 10px;
+      font-size: 14px;
+      color: #637381;
+    }
+    .form-field {
+      margin-bottom: 12px;
+    }
+    .form-field label {
+      display: block;
+      margin-bottom: 5px;
+      font-size: 14px;
+      font-weight: 500;
+    }
+    .form-field input, .form-field select, .form-field textarea {
+      width: 100%;
+      padding: 8px;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      font-size: 14px;
+    }
+    .color-picker {
+      display: flex;
+      align-items: center;
+    }
+    .color-preview {
+      width: 24px;
+      height: 24px;
+      border-radius: 4px;
+      border: 1px solid #ddd;
+      margin-right: 8px;
+    }
+    .element {
+      position: relative;
+      padding: 10px;
+      margin-bottom: 10px;
+      border: 1px solid transparent;
+      border-radius: 4px;
+    }
+    .element:hover {
+      border-color: #ddd;
+    }
+    .element.selected {
+      border-color: #2c6ecb;
+      box-shadow: 0 0 0 1px #2c6ecb;
+    }
+    .element-controls {
+      position: absolute;
+      top: 5px;
+      right: 5px;
+      display: none;
+      background-color: white;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    }
+    .element:hover .element-controls {
+      display: flex;
+    }
+    .element-control {
+      padding: 5px;
+      cursor: pointer;
+      color: #637381;
+    }
+    .element-control:hover {
+      color: #2c6ecb;
+    }
+    .preview-modes {
+      display: flex;
+      justify-content: center;
+      margin-bottom: 20px;
+    }
+    .preview-mode {
+      padding: 8px 16px;
+      cursor: pointer;
+      border: 1px solid #ddd;
+      background-color: white;
+    }
+    .preview-mode:first-child {
+      border-radius: 4px 0 0 4px;
+    }
+    .preview-mode:last-child {
+      border-radius: 0 4px 4px 0;
+    }
+    .preview-mode.active {
+      background-color: #2c6ecb;
+      color: white;
+      border-color: #2c6ecb;
+    }
+    .canvas.mobile {
+      max-width: 375px;
+    }
+    .canvas.tablet {
+      max-width: 768px;
+    }
+    .placeholder-text {
+      color: #637381;
+      text-align: center;
+      padding: 40px 0;
+    }
+  </style>
+</head>
+<body>
+  <div class="editor-header">
+    <div class="logo">KingsBuilder</div>
+    <div class="editor-actions">
+      <button class="button secondary" id="previewBtn">Preview</button>
+      <button class="button secondary" id="saveBtn">Save</button>
+      <button class="button" id="publishBtn">Publish</button>
+      <a href="/" class="button secondary">Exit</a>
+    </div>
+  </div>
+  
+  <div class="editor-container">
+    <div class="sidebar">
+      <div class="sidebar-tabs">
+        <div class="sidebar-tab active" data-tab="elements">Elements</div>
+        <div class="sidebar-tab" data-tab="pages">Pages</div>
+      </div>
+      
+      <div class="sidebar-content" id="elements-tab">
+        <div class="element-category">
+          <h3>Layout</h3>
+          <div class="elements-grid">
+            <div class="element-item" draggable="true" data-type="section">
+              <i>⬚</i>
+              <span>Section</span>
+            </div>
+            <div class="element-item" draggable="true" data-type="row">
+              <i>⬚</i>
+              <span>Row</span>
+            </div>
+            <div class="element-item" draggable="true" data-type="column">
+              <i>⬚</i>
+              <span>Column</span>
+            </div>
+            <div class="element-item" draggable="true" data-type="container">
+              <i>⬚</i>
+              <span>Container</span>
+            </div>
+          </div>
+        </div>
+        
+        <div class="element-category">
+          <h3>Basic</h3>
+          <div class="elements-grid">
+            <div class="element-item" draggable="true" data-type="heading">
+              <i>H</i>
+              <span>Heading</span>
+            </div>
+            <div class="element-item" draggable="true" data-type="text">
+              <i>T</i>
+              <span>Text</span>
+            </div>
+            <div class="element-item" draggable="true" data-type="image">
+              <i>🖼️</i>
+              <span>Image</span>
+            </div>
+            <div class="element-item" draggable="true" data-type="button">
+              <i>B</i>
+              <span>Button</span>
+            </div>
+          </div>
+        </div>
+        
+        <div class="element-category">
+          <h3>E-commerce</h3>
+          <div class="elements-grid">
+            <div class="element-item" draggable="true" data-type="product">
+              <i>🛍️</i>
+              <span>Product</span>
+            </div>
+            <div class="element-item" draggable="true" data-type="collection">
+              <i>🛒</i>
+              <span>Collection</span>
+            </div>
+            <div class="element-item" draggable="true" data-type="add-to-cart">
+              <i>➕</i>
+              <span>Add to Cart</span>
+            </div>
+            <div class="element-item" draggable="true" data-type="product-reviews">
+              <i>★</i>
+              <span>Reviews</span>
+            </div>
+          </div>
+        </div>
+        
+        <div class="element-category">
+          <h3>Advanced</h3>
+          <div class="elements-grid">
+            <div class="element-item" draggable="true" data-type="form">
+              <i>📝</i>
+              <span>Form</span>
+            </div>
+            <div class="element-item" draggable="true" data-type="video">
+              <i>▶️</i>
+              <span>Video</span>
+            </div>
+            <div class="element-item" draggable="true" data-type="map">
+              <i>🗺️</i>
+              <span>Map</span>
+            </div>
+            <div class="element-item" draggable="true" data-type="social">
+              <i>👥</i>
+              <span>Social</span>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      <div class="sidebar-content" id="pages-tab" style="display: none;">
+        <h3>Page Structure</h3>
+        <div id="page-structure">
+          <ul style="list-style: none; padding-left: 0;">
+            <li style="margin-bottom: 8px;">
+              <div style="display: flex; justify-content: space-between; padding: 8px; background-color: #f5f9ff; border-radius: 4px;">
+                <span>Header</span>
+                <span style="color: #637381;">Section</span>
+              </div>
+            </li>
+            <li style="margin-bottom: 8px;">
+              <div style="display: flex; justify-content: space-between; padding: 8px; background-color: #f5f9ff; border-radius: 4px;">
+                <span>Hero</span>
+                <span style="color: #637381;">Section</span>
+              </div>
+            </li>
+            <li style="margin-bottom: 8px;">
+              <div style="display: flex; justify-content: space-between; padding: 8px; background-color: #f5f9ff; border-radius: 4px;">
+                <span>Features</span>
+                <span style="color: #637381;">Section</span>
+              </div>
+            </li>
+            <li style="margin-bottom: 8px;">
+              <div style="display: flex; justify-content: space-between; padding: 8px; background-color: #f5f9ff; border-radius: 4px;">
+                <span>Footer</span>
+                <span style="color: #637381;">Section</span>
+              </div>
+            </li>
+          </ul>
+        </div>
+        
+        <h3>Page Settings</h3>
+        <div class="form-field">
+          <label for="page-title">Page Title</label>
+          <input type="text" id="page-title" value="About Us">
+        </div>
+        <div class="form-field">
+          <label for="page-handle">URL Handle</label>
+          <input type="text" id="page-handle" value="about-us">
+        </div>
+        <div class="form-field">
+          <label for="page-description">Meta Description</label>
+          <textarea id="page-description" rows="3">Learn more about our company and our mission.</textarea>
+        </div>
+      </div>
+    </div>
+    
+    <div class="canvas-container">
+      <div class="preview-modes">
+        <div class="preview-mode active" data-mode="desktop">Desktop</div>
+        <div class="preview-mode" data-mode="tablet">Tablet</div>
+        <div class="preview-mode" data-mode="mobile">Mobile</div>
+      </div>
+      
+      <div class="canvas">
+        <div class="element" data-type="section">
+          <div class="element-controls">
+            <div class="element-control" title="Move Up">↑</div>
+            <div class="element-control" title="Move Down">↓</div>
+            <div class="element-control" title="Duplicate">⎘</div>
+            <div class="element-control" title="Delete">×</div>
+          </div>
+          
+          <div class="element" data-type="heading">
+            <div class="element-controls">
+              <div class="element-control" title="Move Up">↑</div>
+              <div class="element-control" title="Move Down">↓</div>
+              <div class="element-control" title="Duplicate">⎘</div>
+              <div class="element-control" title="Delete">×</div>
+            </div>
+            <h1>About Our Company</h1>
+          </div>
+          
+          <div class="element" data-type="text">
+            <div class="element-controls">
+              <div class="element-control" title="Move Up">↑</div>
+              <div class="element-control" title="Move Down">↓</div>
+              <div class="element-control" title="Duplicate">⎘</div>
+              <div class="element-control" title="Delete">×</div>
+            </div>
+            <p>Welcome to our company page. We are dedicated to providing the best products and services to our customers.</p>
+          </div>
+        </div>
+        
+        <div class="element" data-type="section">
+          <div class="element-controls">
+            <div class="element-control" title="Move Up">↑</div>
+            <div class="element-control" title="Move Down">↓</div>
+            <div class="element-control" title="Duplicate">⎘</div>
+            <div class="element-control" title="Delete">×</div>
+          </div>
+          
+          <div class="element" data-type="row">
+            <div class="element-controls">
+              <div class="element-control" title="Move Up">↑</div>
+              <div class="element-control" title="Move Down">↓</div>
+              <div class="element-control" title="Duplicate">⎘</div>
+              <div class="element-control" title="Delete">×</div>
+            </div>
+            
+            <div style="display: flex; gap: 20px;">
+              <div style="flex: 1;">
+                <div class="element" data-type="image">
+                  <div class="element-controls">
+                    <div class="element-control" title="Move Up">↑</div>
+                    <div class="element-control" title="Move Down">↓</div>
+                    <div class="element-control" title="Duplicate">⎘</div>
+                    <div class="element-control" title="Delete">×</div>
+                  </div>
+                  <img src="https://via.placeholder.com/400x300" alt="Company Image" style="max-width: 100%; height: auto;">
+                </div>
+              </div>
+              
+              <div style="flex: 1;">
+                <div class="element" data-type="heading">
+                  <div class="element-controls">
+                    <div class="element-control" title="Move Up">↑</div>
+                    <div class="element-control" title="Move Down">↓</div>
+                    <div class="element-control" title="Duplicate">⎘</div>
+                    <div class="element-control" title="Delete">×</div>
+                  </div>
+                  <h2>Our Mission</h2>
+                </div>
+                
+                <div class="element" data-type="text">
+                  <div class="element-controls">
+                    <div class="element-control" title="Move Up">↑</div>
+                    <div class="element-control" title="Move Down">↓</div>
+                    <div class="element-control" title="Duplicate">⎘</div>
+                    <div class="element-control" title="Delete">×</div>
+                  </div>
+                  <p>Our mission is to create innovative products that improve people's lives while maintaining the highest standards of quality and customer service.</p>
+                </div>
+                
+                <div class="element" data-type="button">
+                  <div class="element-controls">
+                    <div class="element-control" title="Move Up">↑</div>
+                    <div class="element-control" title="Move Down">↓</div>
+                    <div class="element-control" title="Duplicate">⎘</div>
+                    <div class="element-control" title="Delete">×</div>
+                  </div>
+                  <button style="background-color: #2c6ecb; color: white; border: none; padding: 10px 20px; border-radius: 4px; cursor: pointer;">Learn More</button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        
+        <div class="dropzone">Drop elements here</div>
+      </div>
+    </div>
+    
+    <div class="properties-panel">
+      <h3>Element Properties</h3>
+      <div id="no-selection" class="placeholder-text">
+        Select an element to edit its properties
+      </div>
+      
+      <div id="element-properties" style="display: none;">
+        <div class="property-group">
+          <h4>General</h4>
+          <div class="form-field">
+            <label for="element-id">ID</label>
+            <input type="text" id="element-id" placeholder="Element ID">
+          </div>
+          <div class="form-field">
+            <label for="element-class">CSS Class</label>
+            <input type="text" id="element-class" placeholder="Element class">
+          </div>
+        </div>
+        
+        <div class="property-group">
+          <h4>Content</h4>
+          <div class="form-field">
+            <label for="element-text">Text</label>
+            <textarea id="element-text" rows="3"></textarea>
+          </div>
+        </div>
+        
+        <div class="property-group">
+          <h4>Style</h4>
+          <div class="form-field">
+            <label for="text-color">Text Color</label>
+            <div class="color-picker">
+              <div class="color-preview" style="background-color: #202223;"></div>
+              <input type="text" id="text-color" value="#202223">
+            </div>
+          </div>
+          <div class="form-field">
+            <label for="background-color">Background Color</label>
+            <div class="color-picker">
+              <div class="color-preview" style="background-color: transparent;"></div>
+              <input type="text" id="background-color" value="transparent">
+            </div>
+          </div>
+          <div class="form-field">
+            <label for="font-size">Font Size</label>
+            <select id="font-size">
+              <option value="12px">12px</option>
+              <option value="14px">14px</option>
+              <option value="16px" selected>16px</option>
+              <option value="18px">18px</option>
+              <option value="20px">20px</option>
+              <option value="24px">24px</option>
+              <option value="32px">32px</option>
+              <option value="48px">48px</option>
+            </select>
+          </div>
+          <div class="form-field">
+            <label for="font-weight">Font Weight</label>
+            <select id="font-weight">
+              <option value="normal" selected>Normal</option>
+              <option value="bold">Bold</option>
+            </select>
+          </div>
+        </div>
+        
+        <div class="property-group">
+          <h4>Layout</h4>
+          <div class="form-field">
+            <label for="padding">Padding</label>
+            <input type="text" id="padding" value="0px">
+          </div>
+          <div class="form-field">
+            <label for="margin">Margin</label>
+            <input type="text" id="margin" value="0px">
+          </div>
+          <div class="form-field">
+            <label for="width">Width</label>
+            <input type="text" id="width" value="auto">
+          </div>
+          <div class="form-field">
+            <label for="height">Height</label>
+            <input type="text" id="height" value="auto">
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  
+  <script>
+    // Initialize Shopify AppBridge
+    const urlParams = new URLSearchParams(window.location.search);
+    const host = urlParams.get('host');
+    const shop = urlParams.get('shop');
+    
+    if (window.shopify && window.shopify.AppBridge && host) {
+      try {
+        const app = window.shopify.AppBridge({
+          apiKey: '8e6e7c9c5c9c9c9c9c9c9c9c9c9c9c9c',
+          host: host,
+          forceRedirect: true
+        });
+        console.log('AppBridge initialized successfully');
+      } catch (error) {
+        console.error('AppBridge initialization error:', error);
+      }
+    }
+    
+    // Editor functionality
+    document.addEventListener('DOMContentLoaded', function() {
+      // Preview mode switching
+      const previewModes = document.querySelectorAll('.preview-mode');
+      const canvas = document.querySelector('.canvas');
+      
+      previewModes.forEach(mode => {
+        mode.addEventListener('click', () => {
+          previewModes.forEach(m => m.classList.remove('active'));
+          mode.classList.add('active');
+          
+          canvas.classList.remove('desktop', 'tablet', 'mobile');
+          canvas.classList.add(mode.dataset.mode);
+        });
+      });
+      
+      // Sidebar tabs
+      const sidebarTabs = document.querySelectorAll('.sidebar-tab');
+      const tabContents = {
+        'elements': document.getElementById('elements-tab'),
+        'pages': document.getElementById('pages-tab')
+      };
+      
+      sidebarTabs.forEach(tab => {
+        tab.addEventListener('click', () => {
+          sidebarTabs.forEach(t => t.classList.remove('active'));
+          tab.classList.add('active');
+          
+          Object.values(tabContents).forEach(content => {
+            content.style.display = 'none';
+          });
+          
+          tabContents[tab.dataset.tab].style.display = 'block';
+        });
+      });
+      
+      // Element selection
+      const elements = document.querySelectorAll('.element');
+      const propertiesPanel = document.getElementById('element-properties');
+      const noSelection = document.getElementById('no-selection');
+      
+      elements.forEach(element => {
+        element.addEventListener('click', (e) => {
+          e.stopPropagation();
+          
+          elements.forEach(el => el.classList.remove('selected'));
+          element.classList.add('selected');
+          
+          noSelection.style.display = 'none';
+          propertiesPanel.style.display = 'block';
+          
+          // Update properties panel based on element type
+          const elementType = element.dataset.type;
+          document.getElementById('element-id').value = element.id || '';
+          document.getElementById('element-class').value = element.className.replace('element', '').replace('selected', '').trim();
+          
+          if (elementType === 'heading' || elementType === 'text') {
+            document.getElementById('element-text').value = element.innerText;
+          }
+        });
+      });
+      
+      // Deselect when clicking on canvas
+      canvas.addEventListener('click', (e) => {
+        if (e.target === canvas) {
+          elements.forEach(el => el.classList.remove('selected'));
+          noSelection.style.display = 'block';
+          propertiesPanel.style.display = 'none';
+        }
+      });
+      
+      // Drag and drop functionality
+      const elementItems = document.querySelectorAll('.element-item');
+      const dropzones = document.querySelectorAll('.dropzone');
+      
+      elementItems.forEach(item => {
+        item.addEventListener('dragstart', (e) => {
+          e.dataTransfer.setData('text/plain', item.dataset.type);
+        });
+      });
+      
+      dropzones.forEach(dropzone => {
+        dropzone.addEventListener('dragover', (e) => {
+          e.preventDefault();
+          dropzone.classList.add('drag-over');
+        });
+        
+        dropzone.addEventListener('dragleave', () => {
+          dropzone.classList.remove('drag-over');
+        });
+        
+        dropzone.addEventListener('drop', (e) => {
+          e.preventDefault();
+          dropzone.classList.remove('drag-over');
+          
+          const elementType = e.dataTransfer.getData('text/plain');
+          let newElement;
+          
+          switch (elementType) {
+            case 'heading':
+              newElement = document.createElement('div');
+              newElement.className = 'element';
+              newElement.dataset.type = 'heading';
+              newElement.innerHTML = `
+                <div class="element-controls">
+                  <div class="element-control" title="Move Up">↑</div>
+                  <div class="element-control" title="Move Down">↓</div>
+                  <div class="element-control" title="Duplicate">⎘</div>
+                  <div class="element-control" title="Delete">×</div>
+                </div>
+                <h2>New Heading</h2>
+              `;
+              break;
+            case 'text':
+              newElement = document.createElement('div');
+              newElement.className = 'element';
+              newElement.dataset.type = 'text';
+              newElement.innerHTML = `
+                <div class="element-controls">
+                  <div class="element-control" title="Move Up">↑</div>
+                  <div class="element-control" title="Move Down">↓</div>
+                  <div class="element-control" title="Duplicate">⎘</div>
+                  <div class="element-control" title="Delete">×</div>
+                </div>
+                <p>New text paragraph. Click to edit.</p>
+              `;
+              break;
+            case 'image':
+              newElement = document.createElement('div');
+              newElement.className = 'element';
+              newElement.dataset.type = 'image';
+              newElement.innerHTML = `
+                <div class="element-controls">
+                  <div class="element-control" title="Move Up">↑</div>
+                  <div class="element-control" title="Move Down">↓</div>
+                  <div class="element-control" title="Duplicate">⎘</div>
+                  <div class="element-control" title="Delete">×</div>
+                </div>
+                <img src="https://via.placeholder.com/400x300" alt="Image" style="max-width: 100%; height: auto;">
+              `;
+              break;
+            case 'button':
+              newElement = document.createElement('div');
+              newElement.className = 'element';
+              newElement.dataset.type = 'button';
+              newElement.innerHTML = `
+                <div class="element-controls">
+                  <div class="element-control" title="Move Up">↑</div>
+                  <div class="element-control" title="Move Down">↓</div>
+                  <div class="element-control" title="Duplicate">⎘</div>
+                  <div class="element-control" title="Delete">×</div>
+                </div>
+                <button style="background-color: #2c6ecb; color: white; border: none; padding: 10px 20px; border-radius: 4px; cursor: pointer;">Button</button>
+              `;
+              break;
+            default:
+              newElement = document.createElement('div');
+              newElement.className = 'element';
+              newElement.dataset.type = elementType;
+              newElement.innerHTML = `
+                <div class="element-controls">
+                  <div class="element-control" title="Move Up">↑</div>
+                  <div class="element-control" title="Move Down">↓</div>
+                  <div class="element-control" title="Duplicate">⎘</div>
+                  <div class="element-control" title="Delete">×</div>
+                </div>
+                <div class="placeholder-text">New ${elementType} element</div>
+              `;
+          }
+          
+          // Add selection event to new element
+          newElement.addEventListener('click', (e) => {
+            e.stopPropagation();
+            
+            elements.forEach(el => el.classList.remove('selected'));
+            newElement.classList.add('selected');
+            
+            noSelection.style.display = 'none';
+            propertiesPanel.style.display = 'block';
+          });
+          
+          // Add element controls functionality
+          const controls = newElement.querySelectorAll('.element-control');
+          controls.forEach(control => {
+            control.addEventListener('click', (e) => {
+              e.stopPropagation();
+              
+              if (control.title === 'Delete') {
+                newElement.remove();
+                noSelection.style.display = 'block';
+                propertiesPanel.style.display = 'none';
+              } else if (control.title === 'Duplicate') {
+                const clone = newElement.cloneNode(true);
+                newElement.parentNode.insertBefore(clone, newElement.nextSibling);
+              }
+            });
+          });
+          
+          // Replace dropzone with the new element and a new dropzone
+          const newDropzone = document.createElement('div');
+          newDropzone.className = 'dropzone';
+          newDropzone.textContent = 'Drop elements here';
+          
+          // Add the same event listeners to the new dropzone
+          newDropzone.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            newDropzone.classList.add('drag-over');
+          });
+          
+          newDropzone.addEventListener('dragleave', () => {
+            newDropzone.classList.remove('drag-over');
+          });
+          
+          newDropzone.addEventListener('drop', (e) => {
+            // This will be handled by the event listener we're adding below
+          });
+          
+          dropzone.parentNode.insertBefore(newElement, dropzone);
+          dropzone.parentNode.insertBefore(newDropzone, dropzone.nextSibling);
+          dropzone.remove();
+          
+          // Add the drop event listener to the new dropzone
+          newDropzone.addEventListener('drop', arguments.callee);
+        });
+      });
+      
+      // Button actions
+      document.getElementById('previewBtn').addEventListener('click', () => {
+        alert('Preview functionality would open a new tab with a preview of the page.');
+      });
+      
+      document.getElementById('saveBtn').addEventListener('click', () => {
+        alert('Page saved successfully!');
+      });
+      
+      document.getElementById('publishBtn').addEventListener('click', () => {
+        alert('Page published successfully!');
+      });
+    });
+  </script>
+</body>
+</html>

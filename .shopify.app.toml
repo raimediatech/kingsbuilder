@@ -1,20 +1,24 @@
-{
-  "name": "KingsBuilder",
-  "client_id": "your_client_id",
-  "scopes": "write_products,read_products,write_customers,read_customers,write_orders,read_orders",
-  "webhooks": {
-    "APP_UNINSTALLED": {
-      "delivery_method": "http",
-      "uri": "/webhooks",
-      "metafield_namespaces": {}
-    }
-  },
-  "auth": {
-    "redirect_urls": [
-      "https://kingsbuilder-git-main-ajay-rais-projects.vercel.app/auth/callback",
-      "https://kingsbuilder-git-main-ajay-rais-projects.vercel.app/auth/shopify/callback",
-      "https://kingsbuilder-git-main-ajay-rais-projects.vercel.app/api/auth/callback"
-    ]
-  },
-  "url": "https://kingsbuilder-git-main-ajay-rais-projects.vercel.app"
-}
+# This file contains the information about your Shopify app.
+# Used by Shopify CLI to connect to the right app when deploying to Shopify.
+
+name = "KingsBuilder"
+client_id = "8e6e7c9c5c9c9c9c9c9c9c9c9c9c9c9c"
+application_url = "https://kingsbuilder-git-main-ajay-rais-projects.vercel.app"
+embedded = true
+
+[access_scopes]
+# Learn more at https://shopify.dev/docs/apps/tools/cli/configuration#access_scopes
+scopes = "write_products,read_products,write_customers,read_customers,write_orders,read_orders"
+
+[auth]
+redirect_urls = [
+  "https://kingsbuilder-git-main-ajay-rais-projects.vercel.app/auth/callback",
+  "https://kingsbuilder-git-main-ajay-rais-projects.vercel.app/auth/shopify/callback",
+  "https://kingsbuilder-git-main-ajay-rais-projects.vercel.app/api/auth/callback"
+]
+
+[webhooks]
+api_version = "2023-10"
+
+[pos]
+embedded = false

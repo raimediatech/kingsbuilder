@@ -1,24 +1,12 @@
-import { createRequestHandler } from "@remix-run/express";
-import { installGlobals } from "@remix-run/node";
-import express from "express";
-
-// Install Remix globals
-installGlobals();
-
-const app = express();
-
-// Serve static files
-app.use(express.static("public"));
-
-// Handle Remix requests
-app.all(
-  "*",
-  createRequestHandler({
-    build: await import("./build/index.js"),
-  })
-);
+// server.js - Simple Express server for Shopify app
+const express = require('express');
+const path = require('path');
+const cors = require('cors');
+const app = require('./api/index.js');
 
 const port = process.env.PORT || 3000;
+
 app.listen(port, () => {
-  console.log(`Express server listening on port ${port}`);
+  console.log(`KingsBuilder Shopify app listening on port ${port}`);
+  console.log(`App URL: ${process.env.SHOPIFY_APP_URL || 'http://localhost:' + port}`);
 });
