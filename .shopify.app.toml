@@ -1,0 +1,20 @@
+{
+  "name": "KingsBuilder",
+  "client_id": "your_client_id",
+  "scopes": "write_products,read_products,write_customers,read_customers,write_orders,read_orders",
+  "webhooks": {
+    "APP_UNINSTALLED": {
+      "delivery_method": "http",
+      "uri": "/webhooks",
+      "metafield_namespaces": {}
+    }
+  },
+  "auth": {
+    "redirect_urls": [
+      "https://kingsbuilder-git-main-ajay-rais-projects.vercel.app/auth/callback",
+      "https://kingsbuilder-git-main-ajay-rais-projects.vercel.app/auth/shopify/callback",
+      "https://kingsbuilder-git-main-ajay-rais-projects.vercel.app/api/auth/callback"
+    ]
+  },
+  "url": "https://kingsbuilder-git-main-ajay-rais-projects.vercel.app"
+}

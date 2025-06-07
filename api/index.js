@@ -9,9 +9,20 @@ const app = express();
 // Serve public files
 app.use(express.static(path.join(__dirname, "..", "public")));
 
+// Special handling for Shopify app requests
+app.get("/", (req, res, next) => {
+  // Check if this is a Shopify request (has shop or host parameter)
+  if (req.query.shop || req.query.host) {
+    // This is a Shopify request, redirect to /app
+    return res.redirect("/app" + (req.url.includes("?") ? req.url.substring(req.url.indexOf("?")) : ""));
+  }
+  
+  // Not a Shopify request, continue to next handler
+  next();
+});
+
 // Handle all requests with Remix
 app.all("*", (req, res, next) => {
-  // This is a fallback in case the build files aren't available yet
   try {
     const build = require("../build");
     return createRequestHandler({

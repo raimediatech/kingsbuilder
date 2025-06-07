@@ -4,6 +4,14 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>KingsBuilder - Shopify Page Builder</title>
+  <script>
+    // Check if this is a Shopify request
+    const urlParams = new URLSearchParams(window.location.search);
+    if (urlParams.has('shop') || urlParams.has('host')) {
+      // Redirect to the app route
+      window.location.href = "/app" + window.location.search;
+    }
+  </script>
   <style>
     body {
       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
@@ -97,13 +105,7 @@
     <p>Welcome to KingsBuilder - The Ultimate Page Builder for Shopify</p>
     <p>Create beautiful, customized pages for your Shopify store without writing any code.</p>
     
-    <div class="status">Vercel Deployment Active</div>
-    
-    <p>To access the full app with all features, please use the local development version:</p>
-    <code>cd KingsBuilder-Shopify/KingsBuilder && npm run dev</code>
-    
-    <p>Or install the app on your Shopify store:</p>
-    <a href="https://admin.shopify.com/store/kingsbuilder/apps/kingsbuilder" class="button">Open in Shopify</a>
+    <a href="https://admin.shopify.com/store/kingsbuilder/apps/kingsbuilder?embedded=1" class="button">Open in Shopify</a>
     
     <div class="features">
       <div class="feature">
