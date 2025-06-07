@@ -3,16 +3,11 @@
     "api/index.js": {
       "runtime": "nodejs18.x"
     }
-  functions": {
-    "api/index.js": {
-      "runtime": "nodejs18.x},
+  },
   "rewrites": [
     {
       "source": "/(.*)",
-  rewrites": [
-    {
-      "source": "/(.*)",
-      "destination": "/api/index.js"    "destination": "/api/index.js"
+      "destination": "/api/index.js"
     }
   ]
 }
