@@ -2,9 +2,9 @@
   "name": "KingsBuilder",
   "private": true,
   "scripts": {
-    "build": "echo \"No build needed\"",
-    "dev": "node server.js",
-    "start": "node server.js"
+    "build": "echo \"Buicompletcompleted\"",
+    "dev": "node api/index.js",
+    "start": "node api/index.js"
   },
   "dependencies": {
     "@shopify/app-bridge": "^3.7.9",
