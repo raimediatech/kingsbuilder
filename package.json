@@ -11,12 +11,15 @@
     "env": "shopify app env",
     "start": "node server.js",
     "docker-start": "npm run start",
-    "setup": "echo 'Using MongoDB, no migrations needed'",
+    "setup": "echo \"Using MongoDB, no migrations needed\"",
     "lint": "eslint --cache --cache-location ./node_modules/.cache/eslint .",
     "shopify": "shopify",
     "prisma": "prisma",
     "graphql-codegen": "graphql-codegen",
-    "vite": "vite"
+    "vite": "vite",
+    "test": "jest",
+    "test:watch": "jest --watch",
+    "test:coverage": "jest --coverage"
   },
   "type": "module",
   "engines": {
@@ -40,19 +43,27 @@
     "prisma": "^6.9.0",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
-    "vite-tsconfig-paths": "^5.0.1"
+    "vite-tsconfig-paths": "^5.0.11"
   },
   "devDependencies": {
     "@remix-run/eslint-config": "^2.16.1",
     "@remix-run/route-config": "^2.16.1",
     "@shopify/api-codegen-preset": "^1.1.1",
+    "@testing-library/jest-dom": "^6.4.2",
+    "@testing-library/react": "^14.2.1",
+    "@testing-library/user-event": "^14.5.2",
     "@types/eslint": "^9.6.1",
+    "@types/jest": "^29.5.12",
     "@types/node": "^22.2.0",
     "@types/react": "^18.2.31",
     "@types/react-dom": "^18.2.14",
     "eslint": "^8.42.0",
     "eslint-config-prettier": "^10.0.1",
+    "identity-obj-proxy": "^3.0.0",
+    "jest": "^29.7.0",
+    "jest-environment-jsdom": "^29.7.0",
     "prettier": "^3.2.4",
+    "ts-jest": "^29.1.2",
     "typescript": "^5.2.2",
     "vite": "^6.2.2"
   },

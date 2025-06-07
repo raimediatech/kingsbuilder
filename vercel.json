@@ -23,5 +23,10 @@
       "src": "/(.*)",
       "dest": "/api/index.js"
     }
-  ]
+  ],
+  "env": {
+    "DATABASE_URL": "mongodb+srv://kingsbuilder_admin:2BAvGrHLw63hWd3@cluster0.3wvn3jk.mongodb.net/kingsbuilder?retryWrites=true&w=majority&appName=Cluster0",
+    "SHOPIFY_APP_URL": "https://kingsbuilder-git-main-ajay-rais-projects.vercel.app",
+    "NODE_ENV": "production"
+  }
 }

@@ -28,6 +28,8 @@ export default function App() {
         <Link to="/app/products">Products</Link>
         <Link to="/app/widgets">Advanced Widgets</Link>
         <Link to="/app/templates">Templates</Link>
+        <Link to="/app/collaboration">Collaboration</Link>
+        <Link to="/app/performance">Performance</Link>
         <Link to="/app/settings">Settings</Link>
       </NavMenu>
       <Outlet />
@@ -43,3 +45,4 @@ export function ErrorBoundary() {
 export const headers: HeadersFunction = (headersArgs) => {
   return boundary.headers(headersArgs);
 };
+

@@ -1,228 +1,283 @@
-/**
- * Utility functions for page performance metrics
- */
+import { prisma } from "~/db.server";
 
-/**
- * Performance metric types
- */
-export interface PerformanceMetrics {
-  // Navigation timing metrics
-  navigationStart?: number;
-  redirectTime?: number;
-  dnsLookupTime?: number;
-  tcpConnectTime?: number;
-  serverResponseTime?: number;
-  pageDownloadTime?: number;
-  domProcessingTime?: number;
-  domContentLoadedTime?: number;
-  pageLoadTime?: number;
-  
-  // Resource timing metrics
-  resourceCount?: number;
-  resourceLoadTime?: number;
-  
-  // Paint timing metrics
+export interface PerformanceMetricData {
+  pageId: string;
+  loadTime?: number;
   firstPaint?: number;
   firstContentfulPaint?: number;
-  
-  // Layout shift metrics
-  cumulativeLayoutShift?: number;
-  
-  // Largest contentful paint
-  largestContentfulPaint?: number;
-  
-  // First input delay
-  firstInputDelay?: number;
-  
-  // Total blocking time
-  totalBlockingTime?: number;
-  
-  // Time to interactive
-  timeToInteractive?: number;
+  domInteractive?: number;
+  domComplete?: number;
+  ttfb?: number;
+  resourceCount?: number;
+  resourceSize?: number;
+  deviceType?: string;
 }
 
-/**
- * Collect performance metrics from the browser
- * @returns Performance metrics object
- */
-export function collectPerformanceMetrics(): PerformanceMetrics {
-  // Only run in browser environment
-  if (typeof window === 'undefined' || !window.performance) {
-    return {};
-  }
-  
-  const metrics: PerformanceMetrics = {};
-  
-  // Navigation timing metrics
-  if (performance.timing) {
-    const timing = performance.timing;
-    
-    metrics.navigationStart = timing.navigationStart;
-    metrics.redirectTime = timing.redirectEnd - timing.redirectStart;
-    metrics.dnsLookupTime = timing.domainLookupEnd - timing.domainLookupStart;
-    metrics.tcpConnectTime = timing.connectEnd - timing.connectStart;
-    metrics.serverResponseTime = timing.responseStart - timing.requestStart;
-    metrics.pageDownloadTime = timing.responseEnd - timing.responseStart;
-    metrics.domProcessingTime = timing.domComplete - timing.domLoading;
-    metrics.domContentLoadedTime = timing.domContentLoadedEventEnd - timing.navigationStart;
-    metrics.pageLoadTime = timing.loadEventEnd - timing.navigationStart;
-  }
-  
-  // Resource timing metrics
-  const resources = performance.getEntriesByType('resource');
-  if (resources.length > 0) {
-    metrics.resourceCount = resources.length;
-    metrics.resourceLoadTime = resources.reduce((total, resource) => total + resource.duration, 0);
-  }
-  
-  // Paint timing metrics
-  const paintEntries = performance.getEntriesByType('paint');
-  const firstPaint = paintEntries.find(entry => entry.name === 'first-paint');
-  const firstContentfulPaint = paintEntries.find(entry => entry.name === 'first-contentful-paint');
-  
-  if (firstPaint) {
-    metrics.firstPaint = firstPaint.startTime;
-  }
-  
-  if (firstContentfulPaint) {
-    metrics.firstContentfulPaint = firstContentfulPaint.startTime;
-  }
-  
-  // Layout shift metrics
-  if ('LayoutShift' in window) {
-    let cumulativeLayoutShift = 0;
-    
-    const observer = new PerformanceObserver(list => {
-      for (const entry of list.getEntries()) {
-        if (!entry.hadRecentInput) {
-          cumulativeLayoutShift += entry.value;
-        }
-      }
+export class PerformanceMetricsManager {
+  /**
+   * Records performance metrics for a page
+   */
+  static async recordMetrics(data: PerformanceMetricData) {
+    return prisma.performanceMetric.create({
+      data: {
+        pageId: data.pageId,
+        loadTime: data.loadTime,
+        firstPaint: data.firstPaint,
+        firstContentfulPaint: data.firstContentfulPaint,
+        domInteractive: data.domInteractive,
+        domComplete: data.domComplete,
+        ttfb: data.ttfb,
+        resourceCount: data.resourceCount,
+        resourceSize: data.resourceSize,
+        deviceType: data.deviceType || "unknown",
+      },
     });
-    
-    observer.observe({ type: 'layout-shift', buffered: true });
-    metrics.cumulativeLayoutShift = cumulativeLayoutShift;
   }
-  
-  // Largest contentful paint
-  if ('LargestContentfulPaint' in window) {
-    let largestContentfulPaint = 0;
-    
-    const observer = new PerformanceObserver(list => {
-      const entries = list.getEntries();
-      const lastEntry = entries[entries.length - 1];
-      largestContentfulPaint = lastEntry.startTime;
+
+  /**
+   * Gets the most recent performance metrics for a page
+   */
+  static async getPageMetrics(pageId: string, limit = 50) {
+    return prisma.performanceMetric.findMany({
+      where: {
+        pageId,
+      },
+      orderBy: {
+        timestamp: "desc",
+      },
+      take: limit,
     });
-    
-    observer.observe({ type: 'largest-contentful-paint', buffered: true });
-    metrics.largestContentfulPaint = largestContentfulPaint;
   }
-  
-  return metrics;
-}
 
-/**
- * Initialize performance monitoring
- * @param callback Function to call with performance metrics
- * @param sendToServer Whether to send metrics to the server
- * @param serverEndpoint Server endpoint to send metrics to
- */
-export function initPerformanceMonitoring(
-  callback?: (metrics: PerformanceMetrics) => void,
-  sendToServer: boolean = false,
-  serverEndpoint: string = '/api/performance-metrics'
-): void {
-  // Only run in browser environment
-  if (typeof window === 'undefined') return;
-  
-  // Wait for the page to fully load
-  window.addEventListener('load', () => {
-    // Wait a bit to ensure all metrics are available
-    setTimeout(() => {
-      const metrics = collectPerformanceMetrics();
+  /**
+   * Gets average performance metrics for a page over a specified time period
+   */
+  static async getPageAverageMetrics(pageId: string, days = 30) {
+    const startDate = new Date();
+    startDate.setDate(startDate.getDate() - days);
+
+    const metrics = await prisma.performanceMetric.findMany({
+      where: {
+        pageId,
+        timestamp: {
+          gte: startDate,
+        },
+      },
+      select: {
+        loadTime: true,
+        firstPaint: true,
+        firstContentfulPaint: true,
+        domInteractive: true,
+        domComplete: true,
+        ttfb: true,
+        resourceCount: true,
+        resourceSize: true,
+      },
+    });
+
+    const sampleSize = await prisma.performanceMetric.count({
+      where: {
+        pageId,
+        timestamp: {
+          gte: startDate,
+        },
+      },
+    });
+
+    if (sampleSize === 0) {
+      return null;
+    }
+
+    // Calculate averages
+    const averages = metrics.reduce(
+      (acc, metric) => {
+        return {
+          loadTime: acc.loadTime + (metric.loadTime || 0),
+          firstPaint: acc.firstPaint + (metric.firstPaint || 0),
+          firstContentfulPaint: acc.firstContentfulPaint + (metric.firstContentfulPaint || 0),
+          domInteractive: acc.domInteractive + (metric.domInteractive || 0),
+          domComplete: acc.domComplete + (metric.domComplete || 0),
+          ttfb: acc.ttfb + (metric.ttfb || 0),
+          resourceCount: acc.resourceCount + (metric.resourceCount || 0),
+          resourceSize: acc.resourceSize + (metric.resourceSize || 0),
+        };
+      },
+      {
+        loadTime: 0,
+        firstPaint: 0,
+        firstContentfulPaint: 0,
+        domInteractive: 0,
+        domComplete: 0,
+        ttfb: 0,
+        resourceCount: 0,
+        resourceSize: 0,
+      }
+    );
+
+    return {
+      loadTime: Math.round(averages.loadTime / sampleSize),
+      firstPaint: Math.round(averages.firstPaint / sampleSize),
+      firstContentfulPaint: Math.round(averages.firstContentfulPaint / sampleSize),
+      domInteractive: Math.round(averages.domInteractive / sampleSize),
+      domComplete: Math.round(averages.domComplete / sampleSize),
+      ttfb: Math.round(averages.ttfb / sampleSize),
+      resourceCount: Math.round(averages.resourceCount / sampleSize),
+      resourceSize: Math.round(averages.resourceSize / sampleSize),
+      sampleSize,
+    };
+  }
+
+  /**
+   * Gets metrics broken down by device type
+   */
+  static async getMetricsByDeviceType(pageId: string, days = 30) {
+    const startDate = new Date();
+    startDate.setDate(startDate.getDate() - days);
+
+    const metrics = await prisma.performanceMetric.findMany({
+      where: {
+        pageId,
+        timestamp: {
+          gte: startDate,
+        },
+      },
+      select: {
+        deviceType: true,
+        loadTime: true,
+        firstContentfulPaint: true,
+      },
+    });
+
+    // Group by device type
+    const deviceGroups: Record<
+      string,
+      { loadTimes: number[]; fcpTimes: number[]; count: number }
+    > = {};
+
+    metrics.forEach((metric) => {
+      const deviceType = metric.deviceType || "unknown";
       
-      // Call the callback if provided
-      if (callback) {
-        callback(metrics);
+      if (!deviceGroups[deviceType]) {
+        deviceGroups[deviceType] = {
+          loadTimes: [],
+          fcpTimes: [],
+          count: 0,
+        };
       }
       
-      // Send metrics to the server if requested
-      if (sendToServer) {
-        fetch(serverEndpoint, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify(metrics),
-        }).catch(error => {
-          console.error('Error sending performance metrics:', error);
-        });
+      if (metric.loadTime) {
+        deviceGroups[deviceType].loadTimes.push(metric.loadTime);
       }
-    }, 1000);
-  });
-}
+      
+      if (metric.firstContentfulPaint) {
+        deviceGroups[deviceType].fcpTimes.push(metric.firstContentfulPaint);
+      }
+      
+      deviceGroups[deviceType].count++;
+    });
 
-/**
- * Format a time value in milliseconds to a human-readable string
- * @param timeMs Time in milliseconds
- * @returns Formatted time string
- */
-export function formatTime(timeMs: number | undefined): string {
-  if (timeMs === undefined) return 'N/A';
-  
-  if (timeMs < 1) {
-    return '< 1ms';
-  } else if (timeMs < 1000) {
-    return `${Math.round(timeMs)}ms`;
-  } else {
-    return `${(timeMs / 1000).toFixed(2)}s`;
-  }
-}
+    // Calculate averages for each device type
+    const result: Record<
+      string,
+      { avgLoadTime: number; avgFcp: number; sampleSize: number }
+    > = {};
 
-/**
- * Get a performance score based on metrics
- * @param metrics Performance metrics
- * @returns Score from 0 to 100
- */
-export function calculatePerformanceScore(metrics: PerformanceMetrics): number {
-  // This is a simplified scoring algorithm
-  // In a real app, you would use a more sophisticated algorithm
-  
-  let score = 100;
-  
-  // Penalize for slow page load time
-  if (metrics.pageLoadTime) {
-    if (metrics.pageLoadTime > 5000) {
-      score -= 30;
-    } else if (metrics.pageLoadTime > 3000) {
-      score -= 20;
-    } else if (metrics.pageLoadTime > 1000) {
-      score -= 10;
-    }
+    Object.entries(deviceGroups).forEach(([deviceType, data]) => {
+      const avgLoadTime = data.loadTimes.length > 0
+        ? Math.round(data.loadTimes.reduce((sum, val) => sum + val, 0) / data.loadTimes.length)
+        : 0;
+        
+      const avgFcp = data.fcpTimes.length > 0
+        ? Math.round(data.fcpTimes.reduce((sum, val) => sum + val, 0) / data.fcpTimes.length)
+        : 0;
+
+      result[deviceType] = {
+        avgLoadTime,
+        avgFcp,
+        sampleSize: data.count,
+      };
+    });
+
+    return result;
   }
-  
-  // Penalize for slow first contentful paint
-  if (metrics.firstContentfulPaint) {
-    if (metrics.firstContentfulPaint > 3000) {
-      score -= 20;
-    } else if (metrics.firstContentfulPaint > 1500) {
-      score -= 10;
-    } else if (metrics.firstContentfulPaint > 1000) {
-      score -= 5;
-    }
+
+  /**
+   * Gets performance trends over time
+   */
+  static async getPerformanceTrends(pageId: string, days = 30, interval: "day" | "week" = "day") {
+    const startDate = new Date();
+    startDate.setDate(startDate.getDate() - days);
+
+    const metrics = await prisma.performanceMetric.findMany({
+      where: {
+        pageId,
+        timestamp: {
+          gte: startDate,
+        },
+      },
+      select: {
+        timestamp: true,
+        loadTime: true,
+        firstContentfulPaint: true,
+      },
+    });
+
+    // Group by interval (day or week)
+    const intervalGroups: Record<
+      string,
+      { loadTimes: number[]; fcpTimes: number[]; count: number }
+    > = {};
+
+    metrics.forEach((metric) => {
+      const date = new Date(metric.timestamp);
+      let intervalKey: string;
+      
+      if (interval === "day") {
+        intervalKey = date.toISOString().split("T")[0]; // YYYY-MM-DD
+      } else {
+        // For week, use the year and week number
+        const weekNumber = Math.ceil((date.getDate() + new Date(date.getFullYear(), date.getMonth(), 1).getDay()) / 7);
+        intervalKey = `${date.getFullYear()}-W${weekNumber}`;
+      }
+      
+      if (!intervalGroups[intervalKey]) {
+        intervalGroups[intervalKey] = {
+          loadTimes: [],
+          fcpTimes: [],
+          count: 0,
+        };
+      }
+      
+      if (metric.loadTime) {
+        intervalGroups[intervalKey].loadTimes.push(metric.loadTime);
+      }
+      
+      if (metric.firstContentfulPaint) {
+        intervalGroups[intervalKey].fcpTimes.push(metric.firstContentfulPaint);
+      }
+      
+      intervalGroups[intervalKey].count++;
+    });
+
+    // Calculate averages for each interval
+    const result = Object.entries(intervalGroups).map(([intervalKey, data]) => {
+      const avgLoadTime = data.loadTimes.length > 0
+        ? Math.round(data.loadTimes.reduce((sum, val) => sum + val, 0) / data.loadTimes.length)
+        : 0;
+        
+      const avgFcp = data.fcpTimes.length > 0
+        ? Math.round(data.fcpTimes.reduce((sum, val) => sum + val, 0) / data.fcpTimes.length)
+        : 0;
+
+      return {
+        interval: intervalKey,
+        avgLoadTime,
+        avgFcp,
+        sampleSize: data.count,
+      };
+    });
+
+    // Sort by interval
+    return result.sort((a, b) => a.interval.localeCompare(b.interval));
   }
-  
-  // Penalize for layout shifts
-  if (metrics.cumulativeLayoutShift) {
-    if (metrics.cumulativeLayoutShift > 0.25) {
-      score -= 20;
-    } else if (metrics.cumulativeLayoutShift > 0.1) {
-      score -= 10;
-    } else if (metrics.cumulativeLayoutShift > 0.05) {
-      score -= 5;
-    }
-  }
-  
-  // Ensure score is between 0 and 100
-  return Math.max(0, Math.min(100, score));
 }

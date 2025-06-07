@@ -5,28 +5,69 @@ generator client {
   provider = "prisma-client-js"
 }
 
-// Note that some adapters may set a maximum length for the String type by default, please ensure your strings are long
-// enough when changing adapters.
-// See https://www.prisma.io/docs/orm/reference/prisma-schema-reference#string for more information
 datasource db {
-  provider = "sqlite"
-  url      = "file:dev.sqlite"
+  provider = "mongodb"
+  url      = env("DATABASE_URL")
 }
 
 model Session {
-  id            String    @id
-  shop          String
-  state         String
-  isOnline      Boolean   @default(false)
-  scope         String?
-  expires       DateTime?
-  accessToken   String
-  userId        BigInt?
-  firstName     String?
-  lastName      String?
-  email         String?
-  accountOwner  Boolean   @default(false)
-  locale        String?
-  collaborator  Boolean?  @default(false)
-  emailVerified Boolean?  @default(false)
+  id          String    @id @default(auto()) @map("_id") @db.ObjectId
+  shop        String
+  state       String
+  isOnline    Boolean   @default(false)
+  scope       String?
+  expires     DateTime?
+  accessToken String
+  userId      String?
+}
+
+model Page {
+  id          String   @id @default(auto()) @map("_id") @db.ObjectId
+  title       String
+  slug        String
+  content     Json
+  published   Boolean  @default(false)
+  shopifyId   String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  userId      String?
+  templateId  String?  @db.ObjectId
+  template    Template? @relation(fields: [templateId], references: [id])
+  performanceMetrics PerformanceMetric[]
+}
+
+model Template {
+  id          String   @id @default(auto()) @map("_id") @db.ObjectId
+  title       String
+  category    String
+  content     Json
+  thumbnail   String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  pages       Page[]
+}
+
+model User {
+  id          String   @id @default(auto()) @map("_id") @db.ObjectId
+  email       String   @unique
+  name        String?
+  role        String   @default("editor")
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model PerformanceMetric {
+  id                   String   @id @default(auto()) @map("_id") @db.ObjectId
+  pageId               String   @db.ObjectId
+  page                 Page     @relation(fields: [pageId], references: [id])
+  loadTime             Int?
+  firstPaint           Int?
+  firstContentfulPaint Int?
+  domInteractive       Int?
+  domComplete          Int?
+  ttfb                 Int?
+  resourceCount        Int?
+  resourceSize         Int?
+  deviceType           String?
+  timestamp            DateTime @default(now())
 }

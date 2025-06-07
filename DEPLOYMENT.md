@@ -1,121 +1,84 @@
 # KingsBuilder Deployment Guide
 
-This document provides instructions for deploying the KingsBuilder Shopify app to Vercel.
+This document outlines the deployment process for the KingsBuilder application.
+
+## Environments
+
+KingsBuilder uses three environments:
+
+1. **Development**: Local development environment
+2. **Staging**: Pre-production testing environment
+3. **Production**: Live environment for end users
 
 ## Prerequisites
 
-Before deploying, ensure you have:
+- Node.js (v18.x or v20.x)
+- npm
+- Shopify CLI
+- MongoDB
+- Docker and Docker Compose (for containerized deployment)
+- GitHub account (for CI/CD)
 
-1. A Shopify Partners account
-2. A MongoDB database (Atlas recommended)
-3. A Vercel account
-4. A GitHub repository for your code
+## CI/CD Pipeline
+
+KingsBuilder uses GitHub Actions for continuous integration and deployment. The pipeline includes:
+
+1. **Testing**: Runs linting and unit tests
+2. **Building**: Builds the application
+3. **Deployment**: Deploys to staging or production based on the branch
+
+### Workflow Files
+
+- `.github/workflows/ci.yml`: Main CI/CD pipeline
+- `.github/workflows/monitoring.yml`: Scheduled health checks
+
+## Manual Deployment
+
+### Using Shopify CLI
+
+```bash
+# Deploy to staging
+npm run build
+shopify app deploy --environment=staging
+
+# Deploy to production
+npm run build
+shopify app deploy
+```
+
+### Using Docker
+
+```bash
+# Build and start containers
+docker-compose up -d
+
+# View logs
+docker-compose logs -f
+```
+
+## Rollback Procedure
+
+If a deployment causes issues, you can roll back to a previous version:
+
+```bash
+# Roll back to a specific version
+./scripts/rollback.sh production v1.2.3
+```
+
+## Monitoring
+
+KingsBuilder includes comprehensive monitoring:
+
+1. **Health Checks**: Regular checks of API endpoints and database
+2. **Metrics**: Performance and usage metrics via Prometheus
+3. **Dashboards**: Grafana dashboards for visualizing metrics
+
+### Accessing Monitoring
+
+- Health Check: `https://[your-domain]/api/health`
+- Metrics: `https://[your-domain]/api/metrics`
+- Grafana: `https://[your-domain]:3001` (when using Docker)
 
 ## Environment Variables
 
-The following environment variables are required for deployment:
-
-```
-SHOPIFY_API_KEY=your_shopify_api_key
-SHOPIFY_API_SECRET=your_shopify_api_secret
-SCOPES=write_products
-SHOPIFY_APP_URL=https://your-vercel-app-url.vercel.app
-NODE_ENV=production
-DATABASE_URL=your_mongodb_connection_string
-```
-
-## Deployment Steps
-
-### 1. Prepare Your Code
-
-Ensure your code is ready for deployment:
-
-```bash
-# Install dependencies
-npm install
-
-# Build the app
-npm run build
-
-# Commit changes
-git add .
-git commit -m "Prepare for deployment"
-git push
-```
-
-### 2. Set Up Vercel
-
-1. Log in to your Vercel account
-2. Create a new project and connect it to your GitHub repository
-3. Configure the environment variables listed above
-4. Deploy the project
-
-### 3. Update Shopify App Settings
-
-In your Shopify Partners dashboard:
-
-1. Update the App URL to your Vercel deployment URL
-2. Add the following Allowed Redirection URL(s):
-   - `https://your-vercel-app-url.vercel.app/auth/callback`
-   - `https://your-vercel-app-url.vercel.app/auth/shopify/callback`
-   - `https://your-vercel-app-url.vercel.app/api/auth/callback`
-
-### 4. Verify Deployment
-
-1. Visit your Vercel deployment URL
-2. Check the Vercel logs for any errors
-3. Test the app installation flow in a development store
-
-## Troubleshooting
-
-### 500 Error on Deployment
-
-If you encounter a 500 error:
-
-1. Check the Vercel logs for specific error messages
-2. Verify that all environment variables are correctly set
-3. Ensure your MongoDB connection string is valid
-4. Check that your Shopify API credentials are correct
-
-### MongoDB Connection Issues
-
-If you have issues connecting to MongoDB:
-
-1. Verify your connection string is correct
-2. Ensure your IP address is whitelisted in MongoDB Atlas
-3. Check that your database user has the correct permissions
-
-### Shopify Authentication Problems
-
-If Shopify authentication fails:
-
-1. Verify your API key and secret are correct
-2. Ensure your app URL is correctly set in both Vercel and Shopify
-3. Check that your redirect URLs are properly configured
-
-## Maintenance
-
-### Updating Your App
-
-To update your deployed app:
-
-1. Make your changes locally
-2. Test thoroughly
-3. Commit and push to GitHub
-4. Vercel will automatically deploy the changes
-
-### Monitoring
-
-Monitor your app's performance using:
-
-1. Vercel analytics
-2. MongoDB Atlas monitoring
-3. Shopify Partner Dashboard
-
-## Support
-
-If you encounter issues not covered in this guide, please contact the development team or refer to the following resources:
-
-- [Vercel Documentation](https://vercel.com/docs)
-- [MongoDB Atlas Documentation](https://docs.atlas.mongodb.com/)
-- [Shopify App Development Documentation](https://shopify.dev/docs/apps)
+See `.env.example` for required environment variables. Make sure to set these in your deployment environment.
