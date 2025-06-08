@@ -523,13 +523,7 @@ app.get('*', (req, res) => {
           </div>
           
           <script>
-            // Load data on page load
-            document.addEventListener('DOMContentLoaded', function() {
-              loadDashboardData();
-              loadPages();
-              loadTemplates();
-            });
-            
+            // Global functions
             function showSection(sectionName, clickedElement) {
               // Hide all sections
               document.querySelectorAll('.content-section').forEach(section => {
@@ -925,6 +919,13 @@ app.get('*', (req, res) => {
                 event.target.style.display = 'none';
               }
             }
+            
+            // Load data on page load
+            document.addEventListener('DOMContentLoaded', function() {
+              loadDashboardData();
+              loadPages();
+              loadTemplates();
+            });
           </script>
         </body>
       </html>
