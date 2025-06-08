@@ -413,6 +413,80 @@ app.get('*', (req, res) => {
               </div>
             </div>
             
+            <!-- Edit Page Modal -->
+            <div id="editPageModal" class="modal" style="display: none;">
+              <div class="modal-content">
+                <h3>Edit Page</h3>
+                <input type="hidden" id="editPageId">
+                <div class="form-group">
+                  <label>Page Title:</label>
+                  <input type="text" id="editPageTitle" placeholder="Enter page title" oninput="updateEditHandle()">
+                </div>
+                <div class="form-group">
+                  <label>URL Handle:</label>
+                  <input type="text" id="editPageHandle" placeholder="page-handle">
+                </div>
+                <div class="form-group">
+                  <label>Status:</label>
+                  <select id="editPageStatus">
+                    <option value="draft">Draft</option>
+                    <option value="published">Published</option>
+                  </select>
+                </div>
+                <div class="form-group">
+                  <label>Template:</label>
+                  <select id="editPageTemplate">
+                    <option value="blank">Blank Page</option>
+                    <option value="about">About Us</option>
+                    <option value="contact">Contact Page</option>
+                    <option value="faq">FAQ Page</option>
+                    <option value="landing">Landing Page</option>
+                  </select>
+                </div>
+                <div class="modal-actions">
+                  <button class="button" onclick="updatePage()">Update Page</button>
+                  <button class="button-secondary" onclick="closeModal('editPageModal')">Cancel</button>
+                </div>
+              </div>
+            </div>
+            
+            <!-- Edit Page Modal -->
+            <div id="editPageModal" class="modal" style="display: none;">
+              <div class="modal-content">
+                <h3>Edit Page</h3>
+                <input type="hidden" id="editPageId">
+                <div class="form-group">
+                  <label>Page Title:</label>
+                  <input type="text" id="editPageTitle" placeholder="Enter page title" oninput="updateEditHandle()">
+                </div>
+                <div class="form-group">
+                  <label>URL Handle:</label>
+                  <input type="text" id="editPageHandle" placeholder="page-handle">
+                </div>
+                <div class="form-group">
+                  <label>Status:</label>
+                  <select id="editPageStatus">
+                    <option value="draft">Draft</option>
+                    <option value="published">Published</option>
+                  </select>
+                </div>
+                <div class="form-group">
+                  <label>Template:</label>
+                  <select id="editPageTemplate">
+                    <option value="blank">Blank Page</option>
+                    <option value="about">About Us</option>
+                    <option value="contact">Contact Page</option>
+                    <option value="faq">FAQ Page</option>
+                    <option value="landing">Landing Page</option>
+                  </select>
+                </div>
+                <div class="modal-actions">
+                  <button class="button" onclick="updatePage()">Update Page</button>
+                  <button class="button-secondary" onclick="closeModal('editPageModal')">Cancel</button>
+                </div>
+              </div>
+            </div>
+            
             <!-- Templates Modal -->
             <div id="templatesModal" class="modal" style="display: none;">
               <div class="modal-content">
@@ -501,7 +575,7 @@ app.get('*', (req, res) => {
                       <h4>\${page.title}</h4>
                       <p>Handle: \${page.handle} • \${page.views} views</p>
                     </div>
-                    <span style="color: #2c6ecb; font-weight: bold;">\${page.views} views</span>
+                    <span style="color: #000000; font-weight: bold;">\${page.views} views</span>
                   </div>
                 \`).join('');
               } catch (error) {
@@ -528,11 +602,88 @@ app.get('*', (req, res) => {
                 topPages.innerHTML = data.topPages.map(page => \`
                   <div class="page-item">
                     <div class="page-info">
-                      <h4>\${page.title}</h4>
+                        function updateEditHandle() {
+              const title = document.getElementById('editPageTitle').value;
+              const handle = title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+              document.getElementById('editPageHandle').value = handle;
+            }
+            
+            async function editPage(pageId) {
+              try {
+                const response = await fetch(\`/api/pages/\${pageId}\`);
+                const page = await response.json();
+                
+                document.getElementById('editPageId').value = page.id;
+                document.getElementById('editPageTitle').value = page.title;
+                document.getElementById('editPageHandle').value = page.handle;
+                document.getElementById('editPageStatus').value = page.status;
+                document.getElementById('editPageTemplate').value = page.template;
+                
+                document.getElementById('editPageModal').style.display = 'flex';
+              } catch (error) {
+                alert('Error loading page: ' + error.message);
+              }
+            }
+            
+            async function updatePage() {
+              const pageId = document.getElementById('editPageId').value;
+              const title = document.getElementById('editPageTitle').value;
+              const handle = document.getElementById('editPageHandle').value;
+              const status = document.getElementById('editPageStatus').value;
+              const template = document.getElementById('editPageTemplate').value;
+              
+              if (!title) {
+                alert('Please enter a page title');
+                return;
+              }
+              
+              try {
+                const response = await fetch(\`/api/pages/\${pageId}\`, {
+                  method: 'PUT',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({ title, handle, status, template })
+                });
+                
+                if (response.ok) {
+                  alert('Page updated successfully!');
+                  closeModal('editPageModal');
+                  loadPages();
+                  loadDashboardData();
+                } else {
+                  alert('Error updating page');
+                }
+              } catch (error) {
+                alert('Error updating page: ' + error.message);
+              }
+            }
+            
+            async function deletePage(pageId) {
+              if (!confirm('Are you sure you want to delete this page?')) {
+                return;
+              }
+              
+              try {
+                const response = await fetch(\`/api/pages/\${pageId}\`, {
+                  method: 'DELETE'
+                });
+                
+                if (response.ok) {
+                  alert('Page deleted successfully!');
+                  loadPages();
+                  loadDashboardData();
+                } else {
+                  alert('Error deleting page');
+                }
+              } catch (error) {
+                alert('Error deleting page: ' + error.message);
+              }
+            }
+            
+          <h4>\${page.title}</h4>
                       <p>Handle: \${page.handle} • Bounce Rate: \${page.bounceRate}%</p>
                     </div>
                     <div style="text-align: right;">
-                      <div style="font-weight: bold; color: #2c6ecb;">\${page.views} views</div>
+                      <div style="font-weight: bold; color: #000000;">\${page.views} views</div>
                       <div style="font-size: 12px; color: #6b7280;">\${page.visitors} visitors</div>
                     </div>
                   </div>
@@ -547,7 +698,7 @@ app.get('*', (req, res) => {
                       <p>\${source.visits} visits</p>
                     </div>
                     <div style="text-align: right;">
-                      <div style="font-weight: bold; color: #2c6ecb;">\${source.percentage}%</div>
+                      <div style="font-weight: bold; color: #000000;">\${source.percentage}%</div>
                     </div>
                   </div>
                 \`).join('');
@@ -564,6 +715,83 @@ app.get('*', (req, res) => {
               const title = document.getElementById('pageTitle').value;
               const handle = title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
               document.getElementById('pageHandle').value = handle;
+            }
+            
+            function updateEditHandle() {
+              const title = document.getElementById('editPageTitle').value;
+              const handle = title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+              document.getElementById('editPageHandle').value = handle;
+            }
+            
+            async function editPage(pageId) {
+              try {
+                const response = await fetch(\`/api/pages/\${pageId}\`);
+                const page = await response.json();
+                
+                document.getElementById('editPageId').value = page.id;
+                document.getElementById('editPageTitle').value = page.title;
+                document.getElementById('editPageHandle').value = page.handle;
+                document.getElementById('editPageStatus').value = page.status;
+                document.getElementById('editPageTemplate').value = page.template;
+                
+                document.getElementById('editPageModal').style.display = 'flex';
+              } catch (error) {
+                alert('Error loading page: ' + error.message);
+              }
+            }
+            
+            async function updatePage() {
+              const pageId = document.getElementById('editPageId').value;
+              const title = document.getElementById('editPageTitle').value;
+              const handle = document.getElementById('editPageHandle').value;
+              const status = document.getElementById('editPageStatus').value;
+              const template = document.getElementById('editPageTemplate').value;
+              
+              if (!title) {
+                alert('Please enter a page title');
+                return;
+              }
+              
+              try {
+                const response = await fetch(\`/api/pages/\${pageId}\`, {
+                  method: 'PUT',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({ title, handle, status, template })
+                });
+                
+                if (response.ok) {
+                  alert('Page updated successfully!');
+                  closeModal('editPageModal');
+                  loadPages();
+                  loadDashboardData();
+                } else {
+                  alert('Error updating page');
+                }
+              } catch (error) {
+                alert('Error updating page: ' + error.message);
+              }
+            }
+            
+            async function deletePage(pageId) {
+              if (!confirm('Are you sure you want to delete this page?')) {
+                return;
+              }
+              
+              try {
+                const response = await fetch(\`/api/pages/\${pageId}\`, {
+                  method: 'DELETE'
+                });
+                
+                if (response.ok) {
+                  alert('Page deleted successfully!');
+                  loadPages();
+                  loadDashboardData();
+                } else {
+                  alert('Error deleting page');
+                }
+              } catch (error) {
+                alert('Error deleting page: ' + error.message);
+              }
             }
             
             async function createPage() {
@@ -615,7 +843,8 @@ app.get('*', (req, res) => {
                     </div>
                     <div style="display: flex; align-items: center; gap: 10px;">
                       <span class="page-status status-\${page.status}">\${page.status}</span>
-                      <button class="button-secondary" style="padding: 6px 12px; font-size: 12px;">Edit</button>
+                      <button class="button-secondary" style="padding: 6px 12px; font-size: 12px;" onclick="editPage('\${page.id}')">Edit</button>
+                      <button class="button-secondary" style="padding: 6px 12px; font-size: 12px; background: #dc3545;" onclick="deletePage('\${page.id}')">Delete</button>
                     </div>
                   </div>
                 \`).join('');
@@ -644,7 +873,7 @@ app.get('*', (req, res) => {
                   <div class="template-card" onclick="selectTemplate('\${template.id}')">
                     <h4>\${template.name}</h4>
                     <p>\${template.description}</p>
-                    <small style="color: #2c6ecb; font-weight: 600; text-transform: uppercase;">\${template.category}</small>
+                    <small style="color: #000000; font-weight: 600; text-transform: uppercase;">\${template.category}</small>
                     <div style="margin-top: 12px;">
                       <button class="button" style="width: 100%; margin: 0;">Use Template</button>
                     </div>
