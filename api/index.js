@@ -34,6 +34,63 @@ app.get('/api/templates', (req, res) => {
   ]);
 });
 
+// POST endpoint for creating pages
+app.post('/api/pages', (req, res) => {
+  const { title, handle, template } = req.body;
+  
+  if (!title || !handle) {
+    return res.status(400).json({ error: 'Title and handle are required' });
+  }
+  
+  // Simulate creating a page
+  const newPage = {
+    id: Date.now().toString(),
+    title,
+    handle,
+    template: template || 'blank',
+    status: 'draft',
+    createdAt: new Date().toISOString().split('T')[0]
+  };
+  
+  res.status(201).json({ 
+    success: true, 
+    message: 'Page created successfully',
+    page: newPage 
+  });
+});
+
+// PUT endpoint for updating pages
+app.put('/api/pages/:id', (req, res) => {
+  const { id } = req.params;
+  const { title, handle, template, status } = req.body;
+  
+  // Simulate updating a page
+  const updatedPage = {
+    id,
+    title: title || 'Updated Page',
+    handle: handle || 'updated-page',
+    template: template || 'blank',
+    status: status || 'draft',
+    updatedAt: new Date().toISOString().split('T')[0]
+  };
+  
+  res.json({ 
+    success: true, 
+    message: 'Page updated successfully',
+    page: updatedPage 
+  });
+});
+
+// DELETE endpoint for deleting pages
+app.delete('/api/pages/:id', (req, res) => {
+  const { id } = req.params;
+  
+  res.json({ 
+    success: true, 
+    message: `Page ${id} deleted successfully` 
+  });
+});
+
 // Main route
 app.get('*', (req, res) => {
   const isShopifyRequest = req.query.shop || req.query.host || req.query.embedded || req.query.hmac;
@@ -354,8 +411,8 @@ app.get('*', (req, res) => {
                     '</div>' +
                     '<div style="display: flex; align-items: center; gap: 10px;">' +
                       '<span class="page-status status-' + page.status + '">' + page.status + '</span>' +
-                      '<button class="button-secondary" style="padding: 6px 12px; font-size: 12px;">Edit</button>' +
-                      '<button class="button-secondary" style="padding: 6px 12px; font-size: 12px; background: #dc3545; color: white;">Delete</button>' +
+                      '<button class="button-secondary" style="padding: 6px 12px; font-size: 12px;" onclick="editPage(\'' + page.id + '\', \'' + page.title + '\', \'' + page.handle + '\')">Edit</button>' +
+                      '<button class="button-secondary" style="padding: 6px 12px; font-size: 12px; background: #dc3545; color: white;" onclick="deletePage(\'' + page.id + '\', \'' + page.title + '\')">Delete</button>' +
                     '</div>' +
                   '</div>'
                 ).join('');
@@ -425,6 +482,61 @@ app.get('*', (req, res) => {
                 }
               } catch (error) {
                 console.error('Error loading analytics data:', error);
+              }
+            }
+            
+            // Edit page function
+            function editPage(pageId, title, handle) {
+              if (confirm('Edit page: ' + title + '?')) {
+                const newTitle = prompt('Enter new title:', title);
+                if (newTitle && newTitle !== title) {
+                  updatePage(pageId, newTitle, handle);
+                }
+              }
+            }
+            
+            // Delete page function
+            function deletePage(pageId, title) {
+              if (confirm('Are you sure you want to delete "' + title + '"?')) {
+                performDeletePage(pageId);
+              }
+            }
+            
+            // Update page API call
+            async function updatePage(pageId, title, handle) {
+              try {
+                const response = await fetch('/api/pages/' + pageId, {
+                  method: 'PUT',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({ title, handle })
+                });
+                
+                if (response.ok) {
+                  alert('Page updated successfully!');
+                  loadPages();
+                } else {
+                  alert('Error updating page');
+                }
+              } catch (error) {
+                alert('Error updating page: ' + error.message);
+              }
+            }
+            
+            // Delete page API call
+            async function performDeletePage(pageId) {
+              try {
+                const response = await fetch('/api/pages/' + pageId, {
+                  method: 'DELETE'
+                });
+                
+                if (response.ok) {
+                  alert('Page deleted successfully!');
+                  loadPages();
+                } else {
+                  alert('Error deleting page');
+                }
+              } catch (error) {
+                alert('Error deleting page: ' + error.message);
               }
             }
             
