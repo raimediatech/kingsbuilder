@@ -135,8 +135,8 @@ app.get('/auth/callback', (req, res) => {
 
 // Main route
 app.get('*', (req, res) => {
-  const isShopifyRequest = req.query.shop || req.query.host;
-  const shop = req.query.shop || 'demo.myshopify.com';
+  const isShopifyRequest = req.query.shop || req.query.host || req.query.embedded || req.query.hmac;
+  const shop = req.query.shop || 'kingsbuilder.myshopify.com';
   
   if (isShopifyRequest) {
     // Shopify app interface
