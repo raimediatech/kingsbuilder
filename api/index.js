@@ -383,8 +383,8 @@ app.get('*', (req, res) => {
               </div>
             </div>
           </div>
-            
-            <!-- Create Page Modal -->
+          
+          <!-- Modals -->
             <div id="createPageModal" class="modal" style="display: none;">
               <div class="modal-content">
                 <h3>Create New Page</h3>
@@ -510,14 +510,6 @@ app.get('*', (req, res) => {
                 <div class="modal-actions">
                   <button class="button-secondary" onclick="closeModal('analyticsModal')">Close</button>
                 </div>
-              </div>
-            </div>
-            
-            <!-- Pages List -->
-            <div class="card">
-              <h3>Your Pages</h3>
-              <div id="pagesList">
-                <!-- Pages will be loaded here -->
               </div>
             </div>
           </div>
@@ -853,11 +845,6 @@ app.get('*', (req, res) => {
                 const allPagesElement = document.getElementById('all-pages');
                 if (allPagesElement) {
                   allPagesElement.innerHTML = pageHTML;
-                }
-                
-                const pagesListElement = document.getElementById('pagesList');
-                if (pagesListElement) {
-                  pagesListElement.innerHTML = pageHTML;
                 }
               } catch (error) {
                 console.error('Error loading pages:', error);
