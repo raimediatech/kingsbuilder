@@ -89,6 +89,596 @@ app.delete('/api/pages/:id', (req, res) => {
   });
 });
 
+// Page Builder Route
+app.get('/builder/:pageId', (req, res) => {
+  const { pageId } = req.params;
+  const shop = req.query.shop || 'kingsbuilder.myshopify.com';
+  
+  res.send(`
+    <!DOCTYPE html>
+    <html>
+      <head>
+        <title>KingsBuilder - Page Builder</title>
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <style>
+          * { box-sizing: border-box; }
+          body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; margin: 0; padding: 0; background: #f6f6f7; }
+          
+          .builder-layout { display: flex; height: 100vh; }
+          
+          /* Left Sidebar - Widgets */
+          .widgets-sidebar { width: 280px; background: white; border-right: 1px solid #e1e3e5; overflow-y: auto; }
+          .sidebar-header { padding: 20px; border-bottom: 1px solid #e1e3e5; }
+          .sidebar-header h2 { margin: 0; font-size: 18px; font-weight: 600; }
+          .back-btn { background: #f3f4f6; color: #374151; border: 1px solid #d1d5db; padding: 8px 16px; border-radius: 6px; text-decoration: none; display: inline-block; margin-bottom: 15px; }
+          
+          .widget-category { margin-bottom: 20px; }
+          .category-title { padding: 15px 20px 10px; font-weight: 600; color: #374151; font-size: 14px; text-transform: uppercase; letter-spacing: 0.5px; }
+          
+          .widget-item { display: flex; align-items: center; padding: 12px 20px; cursor: pointer; transition: all 0.2s; border-left: 3px solid transparent; }
+          .widget-item:hover { background: #f3f4f6; border-left-color: #000000; }
+          .widget-icon { margin-right: 12px; font-size: 18px; }
+          .widget-info h4 { margin: 0 0 2px 0; font-size: 14px; font-weight: 500; }
+          .widget-info p { margin: 0; font-size: 12px; color: #6b7280; }
+          
+          /* Main Canvas */
+          .canvas-area { flex: 1; display: flex; flex-direction: column; }
+          .canvas-toolbar { background: white; padding: 15px 20px; border-bottom: 1px solid #e1e3e5; display: flex; justify-content: between; align-items: center; }
+          .page-title { font-size: 18px; font-weight: 600; margin: 0; }
+          .toolbar-actions { display: flex; gap: 10px; margin-left: auto; }
+          .btn { padding: 8px 16px; border-radius: 6px; border: none; cursor: pointer; font-weight: 500; text-decoration: none; display: inline-block; }
+          .btn-primary { background: #000000; color: white; }
+          .btn-secondary { background: #f3f4f6; color: #374151; border: 1px solid #d1d5db; }
+          
+          .canvas-container { flex: 1; padding: 20px; overflow-y: auto; }
+          .canvas { background: white; min-height: 600px; border-radius: 8px; border: 1px solid #e1e3e5; position: relative; }
+          
+          /* Drop Zone */
+          .drop-zone { min-height: 100px; border: 2px dashed #d1d5db; border-radius: 8px; display: flex; align-items: center; justify-content: center; color: #6b7280; margin: 20px; transition: all 0.2s; }
+          .drop-zone.drag-over { border-color: #000000; background: #f9fafb; }
+          .drop-zone.has-content { border: none; background: none; }
+          
+          /* Widget Elements */
+          .widget-element { position: relative; margin: 10px; padding: 15px; border: 1px solid transparent; border-radius: 6px; transition: all 0.2s; }
+          .widget-element:hover { border-color: #000000; }
+          .widget-element.selected { border-color: #000000; box-shadow: 0 0 0 2px rgba(0,0,0,0.1); }
+          
+          .element-controls { position: absolute; top: -35px; right: 0; display: none; background: white; border: 1px solid #e1e3e5; border-radius: 6px; padding: 5px; }
+          .widget-element:hover .element-controls { display: flex; }
+          .control-btn { background: none; border: none; padding: 5px; cursor: pointer; font-size: 14px; }
+          
+          /* Widget Styles */
+          .text-widget { }
+          .text-widget h1 { margin: 0 0 10px 0; font-size: 32px; font-weight: 700; }
+          .text-widget h2 { margin: 0 0 10px 0; font-size: 24px; font-weight: 600; }
+          .text-widget p { margin: 0 0 10px 0; line-height: 1.6; }
+          
+          .image-widget { text-align: center; }
+          .image-widget img { max-width: 100%; height: auto; border-radius: 8px; }
+          .image-placeholder { background: #f3f4f6; padding: 40px; border-radius: 8px; color: #6b7280; }
+          
+          .button-widget { text-align: center; }
+          .button-widget .btn { padding: 12px 24px; font-size: 16px; }
+          
+          .columns-widget { display: flex; gap: 20px; }
+          .column { flex: 1; padding: 20px; background: #f9fafb; border-radius: 6px; min-height: 100px; }
+          
+          .spacer-widget { height: 40px; background: repeating-linear-gradient(90deg, transparent, transparent 10px, #e5e7eb 10px, #e5e7eb 20px); }
+          
+          /* Right Sidebar - Properties */
+          .properties-sidebar { width: 280px; background: white; border-left: 1px solid #e1e3e5; overflow-y: auto; }
+          .properties-header { padding: 20px; border-bottom: 1px solid #e1e3e5; }
+          .properties-content { padding: 20px; }
+          .property-group { margin-bottom: 20px; }
+          .property-label { display: block; margin-bottom: 6px; font-weight: 500; color: #374151; font-size: 14px; }
+          .property-input { width: 100%; padding: 8px; border: 1px solid #d1d5db; border-radius: 6px; font-size: 14px; }
+          .property-input:focus { outline: none; border-color: #000000; }
+          
+          /* Mobile Responsive */
+          @media (max-width: 768px) {
+            .builder-layout { flex-direction: column; }
+            .widgets-sidebar, .properties-sidebar { width: 100%; height: auto; }
+            .canvas-area { height: 400px; }
+          }
+        </style>
+      </head>
+      <body>
+        <div class="builder-layout">
+          <!-- Left Sidebar - Widgets -->
+          <div class="widgets-sidebar">
+            <div class="sidebar-header">
+              <a href="javascript:history.back()" class="back-btn">← Back to Pages</a>
+              <h2>🧩 Widgets</h2>
+            </div>
+            
+            <div class="widget-category">
+              <div class="category-title">Content</div>
+              <div class="widget-item" draggable="true" data-widget="text">
+                <span class="widget-icon">📝</span>
+                <div class="widget-info">
+                  <h4>Text</h4>
+                  <p>Headings and paragraphs</p>
+                </div>
+              </div>
+              <div class="widget-item" draggable="true" data-widget="image">
+                <span class="widget-icon">🖼️</span>
+                <div class="widget-info">
+                  <h4>Image</h4>
+                  <p>Photos and graphics</p>
+                </div>
+              </div>
+              <div class="widget-item" draggable="true" data-widget="button">
+                <span class="widget-icon">🔘</span>
+                <div class="widget-info">
+                  <h4>Button</h4>
+                  <p>Call-to-action buttons</p>
+                </div>
+              </div>
+            </div>
+            
+            <div class="widget-category">
+              <div class="category-title">Layout</div>
+              <div class="widget-item" draggable="true" data-widget="columns">
+                <span class="widget-icon">📊</span>
+                <div class="widget-info">
+                  <h4>Columns</h4>
+                  <p>Multi-column layout</p>
+                </div>
+              </div>
+              <div class="widget-item" draggable="true" data-widget="spacer">
+                <span class="widget-icon">📏</span>
+                <div class="widget-info">
+                  <h4>Spacer</h4>
+                  <p>Add vertical space</p>
+                </div>
+              </div>
+            </div>
+            
+            <div class="widget-category">
+              <div class="category-title">E-commerce</div>
+              <div class="widget-item" draggable="true" data-widget="product">
+                <span class="widget-icon">🛍️</span>
+                <div class="widget-info">
+                  <h4>Product</h4>
+                  <p>Single product display</p>
+                </div>
+              </div>
+              <div class="widget-item" draggable="true" data-widget="collection">
+                <span class="widget-icon">📦</span>
+                <div class="widget-info">
+                  <h4>Collection</h4>
+                  <p>Product grid/list</p>
+                </div>
+              </div>
+            </div>
+          </div>
+          
+          <!-- Main Canvas -->
+          <div class="canvas-area">
+            <div class="canvas-toolbar">
+              <h1 class="page-title">Editing: Page ${pageId}</h1>
+              <div class="toolbar-actions">
+                <button class="btn btn-secondary" id="preview-btn">👁️ Preview</button>
+                <button class="btn btn-primary" id="save-btn">💾 Save</button>
+                <button class="btn btn-primary" id="publish-btn">🚀 Publish</button>
+              </div>
+            </div>
+            
+            <div class="canvas-container">
+              <div class="canvas" id="canvas">
+                <div class="drop-zone" id="main-drop-zone">
+                  <p>🎨 Drag widgets here to start building your page</p>
+                </div>
+              </div>
+            </div>
+          </div>
+          
+          <!-- Right Sidebar - Properties -->
+          <div class="properties-sidebar">
+            <div class="properties-header">
+              <h3>⚙️ Properties</h3>
+            </div>
+            <div class="properties-content" id="properties-content">
+              <p style="color: #6b7280; text-align: center; margin-top: 40px;">
+                Select an element to edit its properties
+              </p>
+            </div>
+          </div>
+        </div>
+        
+        <script>
+          let selectedElement = null;
+          let elementCounter = 0;
+          
+          document.addEventListener('DOMContentLoaded', function() {
+            const canvas = document.getElementById('canvas');
+            const dropZone = document.getElementById('main-drop-zone');
+            const propertiesContent = document.getElementById('properties-content');
+            
+            // Drag and Drop functionality
+            document.querySelectorAll('.widget-item').forEach(widget => {
+              widget.addEventListener('dragstart', function(e) {
+                e.dataTransfer.setData('text/plain', this.getAttribute('data-widget'));
+              });
+            });
+            
+            dropZone.addEventListener('dragover', function(e) {
+              e.preventDefault();
+              this.classList.add('drag-over');
+            });
+            
+            dropZone.addEventListener('dragleave', function(e) {
+              this.classList.remove('drag-over');
+            });
+            
+            dropZone.addEventListener('drop', function(e) {
+              e.preventDefault();
+              this.classList.remove('drag-over');
+              
+              const widgetType = e.dataTransfer.getData('text/plain');
+              addWidget(widgetType);
+            });
+            
+            // Toolbar actions
+            document.getElementById('save-btn').addEventListener('click', function() {
+              savePageContent();
+            });
+            
+            document.getElementById('publish-btn').addEventListener('click', function() {
+              publishPage();
+            });
+            
+            document.getElementById('preview-btn').addEventListener('click', function() {
+              previewPage();
+            });
+          });
+          
+          function addWidget(type) {
+            elementCounter++;
+            const elementId = type + '_' + elementCounter;
+            let widgetHTML = '';
+            
+            switch(type) {
+              case 'text':
+                widgetHTML = \`
+                  <div class="widget-element text-widget" data-type="text" data-id="\${elementId}">
+                    <div class="element-controls">
+                      <button class="control-btn" onclick="editElement('\${elementId}')">✏️</button>
+                      <button class="control-btn" onclick="deleteElement('\${elementId}')">🗑️</button>
+                    </div>
+                    <h2 contenteditable="true">Your Heading Here</h2>
+                    <p contenteditable="true">Click to edit this text. You can add multiple paragraphs and format your content.</p>
+                  </div>
+                \`;
+                break;
+                
+              case 'image':
+                widgetHTML = \`
+                  <div class="widget-element image-widget" data-type="image" data-id="\${elementId}">
+                    <div class="element-controls">
+                      <button class="control-btn" onclick="editElement('\${elementId}')">✏️</button>
+                      <button class="control-btn" onclick="deleteElement('\${elementId}')">🗑️</button>
+                    </div>
+                    <div class="image-placeholder">
+                      <p>📷 Click to upload image</p>
+                      <input type="file" accept="image/*" style="margin-top: 10px;" onchange="handleImageUpload(this, '\${elementId}')">
+                    </div>
+                  </div>
+                \`;
+                break;
+                
+              case 'button':
+                widgetHTML = \`
+                  <div class="widget-element button-widget" data-type="button" data-id="\${elementId}">
+                    <div class="element-controls">
+                      <button class="control-btn" onclick="editElement('\${elementId}')">✏️</button>
+                      <button class="control-btn" onclick="deleteElement('\${elementId}')">🗑️</button>
+                    </div>
+                    <button class="btn btn-primary" contenteditable="true">Click Me</button>
+                  </div>
+                \`;
+                break;
+                
+              case 'columns':
+                widgetHTML = \`
+                  <div class="widget-element columns-widget" data-type="columns" data-id="\${elementId}">
+                    <div class="element-controls">
+                      <button class="control-btn" onclick="editElement('\${elementId}')">✏️</button>
+                      <button class="control-btn" onclick="deleteElement('\${elementId}')">🗑️</button>
+                    </div>
+                    <div class="column">
+                      <p contenteditable="true">Column 1 content</p>
+                    </div>
+                    <div class="column">
+                      <p contenteditable="true">Column 2 content</p>
+                    </div>
+                  </div>
+                \`;
+                break;
+                
+              case 'spacer':
+                widgetHTML = \`
+                  <div class="widget-element spacer-widget" data-type="spacer" data-id="\${elementId}">
+                    <div class="element-controls">
+                      <button class="control-btn" onclick="editElement('\${elementId}')">✏️</button>
+                      <button class="control-btn" onclick="deleteElement('\${elementId}')">🗑️</button>
+                    </div>
+                  </div>
+                \`;
+                break;
+                
+              case 'product':
+                widgetHTML = \`
+                  <div class="widget-element" data-type="product" data-id="\${elementId}" style="border: 1px solid #e1e3e5; padding: 20px; border-radius: 8px;">
+                    <div class="element-controls">
+                      <button class="control-btn" onclick="editElement('\${elementId}')">✏️</button>
+                      <button class="control-btn" onclick="deleteElement('\${elementId}')">🗑️</button>
+                    </div>
+                    <div style="display: flex; gap: 20px;">
+                      <div style="width: 150px; height: 150px; background: #f3f4f6; border-radius: 8px; display: flex; align-items: center; justify-content: center;">
+                        📦 Product Image
+                      </div>
+                      <div style="flex: 1;">
+                        <h3 contenteditable="true">Product Name</h3>
+                        <p style="font-size: 24px; font-weight: 600; color: #059669;" contenteditable="true">$29.99</p>
+                        <p contenteditable="true">Product description goes here...</p>
+                        <button class="btn btn-primary">Add to Cart</button>
+                      </div>
+                    </div>
+                  </div>
+                \`;
+                break;
+                
+              case 'collection':
+                widgetHTML = \`
+                  <div class="widget-element" data-type="collection" data-id="\${elementId}">
+                    <div class="element-controls">
+                      <button class="control-btn" onclick="editElement('\${elementId}')">✏️</button>
+                      <button class="control-btn" onclick="deleteElement('\${elementId}')">🗑️</button>
+                    </div>
+                    <h3 contenteditable="true">Featured Products</h3>
+                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px; margin-top: 20px;">
+                      <div style="border: 1px solid #e1e3e5; border-radius: 8px; padding: 15px; text-align: center;">
+                        <div style="width: 100%; height: 120px; background: #f3f4f6; border-radius: 6px; margin-bottom: 10px; display: flex; align-items: center; justify-content: center;">📦</div>
+                        <h4>Product 1</h4>
+                        <p style="color: #059669; font-weight: 600;">$19.99</p>
+                      </div>
+                      <div style="border: 1px solid #e1e3e5; border-radius: 8px; padding: 15px; text-align: center;">
+                        <div style="width: 100%; height: 120px; background: #f3f4f6; border-radius: 6px; margin-bottom: 10px; display: flex; align-items: center; justify-content: center;">📦</div>
+                        <h4>Product 2</h4>
+                        <p style="color: #059669; font-weight: 600;">$24.99</p>
+                      </div>
+                      <div style="border: 1px solid #e1e3e5; border-radius: 8px; padding: 15px; text-align: center;">
+                        <div style="width: 100%; height: 120px; background: #f3f4f6; border-radius: 6px; margin-bottom: 10px; display: flex; align-items: center; justify-content: center;">📦</div>
+                        <h4>Product 3</h4>
+                        <p style="color: #059669; font-weight: 600;">$29.99</p>
+                      </div>
+                    </div>
+                  </div>
+                \`;
+                break;
+            }
+            
+            const dropZone = document.getElementById('main-drop-zone');
+            dropZone.classList.add('has-content');
+            dropZone.innerHTML = '';
+            
+            const canvas = document.getElementById('canvas');
+            canvas.insertAdjacentHTML('beforeend', widgetHTML);
+            
+            // Add click handler for selection
+            const newElement = canvas.querySelector(\`[data-id="\${elementId}"]\`);
+            newElement.addEventListener('click', function(e) {
+              e.stopPropagation();
+              selectElement(this);
+            });
+          }
+          
+          function selectElement(element) {
+            // Remove previous selection
+            document.querySelectorAll('.widget-element.selected').forEach(el => {
+              el.classList.remove('selected');
+            });
+            
+            // Select new element
+            element.classList.add('selected');
+            selectedElement = element;
+            
+            // Show properties
+            showProperties(element);
+          }
+          
+          function showProperties(element) {
+            const type = element.getAttribute('data-type');
+            const id = element.getAttribute('data-id');
+            const propertiesContent = document.getElementById('properties-content');
+            
+            let propertiesHTML = \`
+              <div class="property-group">
+                <label class="property-label">Element ID</label>
+                <input type="text" class="property-input" value="\${id}" readonly>
+              </div>
+              <div class="property-group">
+                <label class="property-label">Element Type</label>
+                <input type="text" class="property-input" value="\${type}" readonly>
+              </div>
+            \`;
+            
+            switch(type) {
+              case 'text':
+                propertiesHTML += \`
+                  <div class="property-group">
+                    <label class="property-label">Text Alignment</label>
+                    <select class="property-input" onchange="updateTextAlign('\${id}', this.value)">
+                      <option value="left">Left</option>
+                      <option value="center">Center</option>
+                      <option value="right">Right</option>
+                    </select>
+                  </div>
+                  <div class="property-group">
+                    <label class="property-label">Text Color</label>
+                    <input type="color" class="property-input" value="#000000" onchange="updateTextColor('\${id}', this.value)">
+                  </div>
+                \`;
+                break;
+                
+              case 'button':
+                propertiesHTML += \`
+                  <div class="property-group">
+                    <label class="property-label">Button Style</label>
+                    <select class="property-input" onchange="updateButtonStyle('\${id}', this.value)">
+                      <option value="primary">Primary</option>
+                      <option value="secondary">Secondary</option>
+                    </select>
+                  </div>
+                  <div class="property-group">
+                    <label class="property-label">Button Link</label>
+                    <input type="url" class="property-input" placeholder="https://..." onchange="updateButtonLink('\${id}', this.value)">
+                  </div>
+                \`;
+                break;
+                
+              case 'spacer':
+                propertiesHTML += \`
+                  <div class="property-group">
+                    <label class="property-label">Height (px)</label>
+                    <input type="number" class="property-input" value="40" min="10" max="200" onchange="updateSpacerHeight('\${id}', this.value)">
+                  </div>
+                \`;
+                break;
+            }
+            
+            propertiesContent.innerHTML = propertiesHTML;
+          }
+          
+          function editElement(elementId) {
+            const element = document.querySelector(\`[data-id="\${elementId}"]\`);
+            selectElement(element);
+          }
+          
+          function deleteElement(elementId) {
+            if (confirm('Delete this element?')) {
+              const element = document.querySelector(\`[data-id="\${elementId}"]\`);
+              element.remove();
+              
+              // Check if canvas is empty
+              const canvas = document.getElementById('canvas');
+              if (canvas.children.length === 0) {
+                canvas.innerHTML = '<div class="drop-zone" id="main-drop-zone"><p>🎨 Drag widgets here to start building your page</p></div>';
+                setupDropZone();
+              }
+            }
+          }
+          
+          function handleImageUpload(input, elementId) {
+            const file = input.files[0];
+            if (file) {
+              const reader = new FileReader();
+              reader.onload = function(e) {
+                const element = document.querySelector(\`[data-id="\${elementId}"]\`);
+                const placeholder = element.querySelector('.image-placeholder');
+                placeholder.innerHTML = \`<img src="\${e.target.result}" alt="Uploaded image">\`;
+              };
+              reader.readAsDataURL(file);
+            }
+          }
+          
+          // Property update functions
+          function updateTextAlign(elementId, align) {
+            const element = document.querySelector(\`[data-id="\${elementId}"]\`);
+            element.style.textAlign = align;
+          }
+          
+          function updateTextColor(elementId, color) {
+            const element = document.querySelector(\`[data-id="\${elementId}"]\`);
+            element.style.color = color;
+          }
+          
+          function updateButtonStyle(elementId, style) {
+            const element = document.querySelector(\`[data-id="\${elementId}"]\`);
+            const button = element.querySelector('button');
+            button.className = 'btn btn-' + style;
+          }
+          
+          function updateButtonLink(elementId, link) {
+            const element = document.querySelector(\`[data-id="\${elementId}"]\`);
+            const button = element.querySelector('button');
+            button.onclick = function() { window.open(link, '_blank'); };
+          }
+          
+          function updateSpacerHeight(elementId, height) {
+            const element = document.querySelector(\`[data-id="\${elementId}"]\`);
+            element.style.height = height + 'px';
+          }
+          
+          function savePageContent() {
+            const canvas = document.getElementById('canvas');
+            const content = canvas.innerHTML;
+            
+            // In a real app, you'd save this to your backend
+            alert('Page content saved! ✅\\n\\nIn a real app, this would save to your database.');
+            console.log('Saved content:', content);
+          }
+          
+          function publishPage() {
+            if (confirm('Publish this page? It will be visible to customers.')) {
+              alert('Page published! 🚀\\n\\nYour page is now live on your store.');
+            }
+          }
+          
+          function previewPage() {
+            const canvas = document.getElementById('canvas');
+            const content = canvas.innerHTML;
+            
+            // Open preview in new window
+            const previewWindow = window.open('', '_blank');
+            previewWindow.document.write(\`
+              <!DOCTYPE html>
+              <html>
+                <head>
+                  <title>Page Preview</title>
+                  <style>
+                    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; margin: 0; padding: 20px; }
+                    .btn { padding: 12px 24px; border-radius: 6px; border: none; cursor: pointer; font-weight: 500; }
+                    .btn-primary { background: #000000; color: white; }
+                    .btn-secondary { background: #f3f4f6; color: #374151; border: 1px solid #d1d5db; }
+                  </style>
+                </head>
+                <body>
+                  <h1>📱 Page Preview</h1>
+                  <hr>
+                  \${content}
+                </body>
+              </html>
+            \`);
+          }
+          
+          function setupDropZone() {
+            const dropZone = document.getElementById('main-drop-zone');
+            
+            dropZone.addEventListener('dragover', function(e) {
+              e.preventDefault();
+              this.classList.add('drag-over');
+            });
+            
+            dropZone.addEventListener('dragleave', function(e) {
+              this.classList.remove('drag-over');
+            });
+            
+            dropZone.addEventListener('drop', function(e) {
+              e.preventDefault();
+              this.classList.remove('drag-over');
+              
+              const widgetType = e.dataTransfer.getData('text/plain');
+              addWidget(widgetType);
+            });
+          }
+        </script>
+      </body>
+    </html>
+  `);
+});
+
 // Main route
 app.get('*', (req, res) => {
   const isShopifyRequest = req.query.shop || req.query.host || req.query.embedded || req.query.hmac;
@@ -536,10 +1126,10 @@ app.get('*', (req, res) => {
             }
             
             function editPage(pageId, title, handle) {
-              const newTitle = prompt('Enter new title:', title);
-              if (newTitle && newTitle !== title) {
-                updatePage(pageId, newTitle, handle);
-              }
+              // Redirect to page builder
+              const currentUrl = new URL(window.location);
+              const builderUrl = '/builder/' + pageId + '?' + currentUrl.searchParams.toString();
+              window.location.href = builderUrl;
             }
             
             function deletePage(pageId, title) {
