@@ -13,13 +13,16 @@ app.get('/health', (req, res) => {
   res.json({ status: 'OK', timestamp: new Date().toISOString() });
 });
 
+// In-memory storage for pages
+let pages = [
+  { id: '1', title: 'About Us', handle: 'about-us', status: 'published', createdAt: '2024-01-15', template: 'about' },
+  { id: '2', title: 'Contact', handle: 'contact', status: 'draft', createdAt: '2024-01-16', template: 'contact' },
+  { id: '3', title: 'FAQ', handle: 'faq', status: 'published', createdAt: '2024-01-17', template: 'faq' }
+];
+
 // API endpoints
 app.get('/api/pages', (req, res) => {
-  res.json([
-    { id: '1', title: 'About Us', handle: 'about-us', status: 'published', createdAt: '2024-01-15' },
-    { id: '2', title: 'Contact', handle: 'contact', status: 'draft', createdAt: '2024-01-16' },
-    { id: '3', title: 'FAQ', handle: 'faq', status: 'published', createdAt: '2024-01-17' }
-  ]);
+  res.json(pages);
 });
 
 app.post('/api/pages', (req, res) => {
@@ -32,7 +35,37 @@ app.post('/api/pages', (req, res) => {
     status: 'draft',
     createdAt: new Date().toISOString().split('T')[0]
   };
+  pages.push(newPage);
   res.status(201).json(newPage);
+});
+
+app.get('/api/pages/:id', (req, res) => {
+  const page = pages.find(p => p.id === req.params.id);
+  if (page) {
+    res.json(page);
+  } else {
+    res.status(404).json({ error: 'Page not found' });
+  }
+});
+
+app.put('/api/pages/:id', (req, res) => {
+  const pageIndex = pages.findIndex(p => p.id === req.params.id);
+  if (pageIndex !== -1) {
+    pages[pageIndex] = { ...pages[pageIndex], ...req.body };
+    res.json(pages[pageIndex]);
+  } else {
+    res.status(404).json({ error: 'Page not found' });
+  }
+});
+
+app.delete('/api/pages/:id', (req, res) => {
+  const pageIndex = pages.findIndex(p => p.id === req.params.id);
+  if (pageIndex !== -1) {
+    const deletedPage = pages.splice(pageIndex, 1)[0];
+    res.json(deletedPage);
+  } else {
+    res.status(404).json({ error: 'Page not found' });
+  }
 });
 
 app.get('/api/templates', (req, res) => {
@@ -46,11 +79,15 @@ app.get('/api/templates', (req, res) => {
 });
 
 app.get('/api/analytics/overview', (req, res) => {
+  const totalPages = pages.length;
+  const publishedPages = pages.filter(p => p.status === 'published').length;
+  const draftPages = pages.filter(p => p.status === 'draft').length;
+  
   res.json({ 
     totalViews: 2847, 
-    totalPages: 3, 
-    publishedPages: 2,
-    draftPages: 1,
+    totalPages: totalPages, 
+    publishedPages: publishedPages,
+    draftPages: draftPages,
     uniqueVisitors: 1923,
     bounceRate: 32.5,
     avgTimeOnPage: 145,
@@ -113,11 +150,11 @@ app.get('*', (req, res) => {
             .app-layout { display: flex; min-height: 100vh; }
             .sidebar { width: 250px; background: #ffffff; border-right: 1px solid #e1e3e5; box-shadow: 2px 0 4px rgba(0,0,0,0.1); }
             .sidebar-header { padding: 24px 20px; border-bottom: 1px solid #e1e3e5; }
-            .sidebar-header h2 { margin: 0; color: #2c6ecb; font-size: 1.5rem; }
+            .sidebar-header h2 { margin: 0; color: #000000; font-size: 1.5rem; }
             .sidebar-nav { padding: 20px 0; }
             .nav-item { display: flex; align-items: center; padding: 12px 20px; color: #374151; text-decoration: none; transition: all 0.2s; }
-            .nav-item:hover { background: #f3f4f6; color: #2c6ecb; }
-            .nav-item.active { background: #eff6ff; color: #2c6ecb; border-right: 3px solid #2c6ecb; }
+            .nav-item:hover { background: #f3f4f6; color: #000000; }
+            .nav-item.active { background: #f3f4f6; color: #000000; border-right: 3px solid #000000; }
             .nav-icon { margin-right: 12px; font-size: 1.1rem; }
             .main-content { flex: 1; padding: 24px; overflow-y: auto; }
             .content-section { display: none; }
@@ -130,8 +167,8 @@ app.get('*', (req, res) => {
             .header { background: linear-gradient(135deg, #2c6ecb 0%, #1a5cb8 100%); color: white; padding: 32px; border-radius: 12px; text-align: center; margin-bottom: 24px; }
             .header h1 { margin: 0 0 8px 0; font-size: 2.5rem; font-weight: 700; }
             .header p { margin: 0; opacity: 0.9; font-size: 1.1rem; }
-            .button { background: #2c6ecb; color: white; padding: 12px 24px; border: none; border-radius: 8px; cursor: pointer; margin-right: 12px; margin-bottom: 8px; font-weight: 600; transition: all 0.2s; }
-            .button:hover { background: #1a5cb8; transform: translateY(-1px); }
+            .button { background: #000000; color: white; padding: 12px 24px; border: none; border-radius: 8px; cursor: pointer; margin-right: 12px; margin-bottom: 8px; font-weight: 600; transition: all 0.2s; }
+            .button:hover { background: #333333; transform: translateY(-1px); }
             .button-secondary { background: #6c757d; color: white; padding: 12px 24px; border: none; border-radius: 8px; cursor: pointer; margin-right: 12px; }
             .button-secondary:hover { background: #5a6268; }
             .status { color: #00a651; font-weight: bold; }
@@ -140,11 +177,11 @@ app.get('*', (req, res) => {
             .form-group { margin-bottom: 20px; }
             .form-group label { display: block; margin-bottom: 8px; font-weight: 600; color: #374151; }
             .form-group input, .form-group select { width: 100%; padding: 12px 16px; border: 2px solid #e5e7eb; border-radius: 8px; box-sizing: border-box; font-size: 16px; transition: border-color 0.2s; }
-            .form-group input:focus, .form-group select:focus { outline: none; border-color: #2c6ecb; }
+            .form-group input:focus, .form-group select:focus { outline: none; border-color: #000000; }
             .modal-actions { margin-top: 24px; text-align: right; }
             .templates-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 20px; margin: 24px 0; }
             .template-card { border: 2px solid #e5e7eb; border-radius: 12px; padding: 20px; cursor: pointer; text-align: center; transition: all 0.2s; }
-            .template-card:hover { border-color: #2c6ecb; transform: translateY(-2px); box-shadow: 0 4px 12px rgba(44, 110, 203, 0.15); }
+            .template-card:hover { border-color: #000000; transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15); }
             .template-card h4 { margin: 0 0 8px 0; color: #1f2937; }
             .template-card p { margin: 0; color: #6b7280; font-size: 14px; }
             .page-item { display: flex; justify-content: space-between; align-items: center; padding: 16px; border-bottom: 1px solid #f3f4f6; }
@@ -156,7 +193,7 @@ app.get('*', (req, res) => {
             .status-draft { background: #f3f4f6; color: #374151; }
             .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px; margin: 20px 0; }
             .stat-card { background: #f8fafc; padding: 20px; border-radius: 12px; text-align: center; }
-            .stat-number { font-size: 2rem; font-weight: 700; color: #2c6ecb; margin-bottom: 4px; }
+            .stat-number { font-size: 2rem; font-weight: 700; color: #000000; margin-bottom: 4px; }
             .stat-label { color: #6b7280; font-size: 14px; }
           </style>
         </head>
