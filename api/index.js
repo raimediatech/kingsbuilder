@@ -89,7 +89,7 @@ app.delete('/api/pages/:id', (req, res) => {
   });
 });
 
-// Page Builder Route
+// Page Builder Route - ADVANCED ELEMENTOR STYLE
 app.get('/builder/:pageId', (req, res) => {
   const { pageId } = req.params;
   const shop = req.query.shop || 'kingsbuilder.myshopify.com';
@@ -107,19 +107,19 @@ app.get('/builder/:pageId', (req, res) => {
           .builder-layout { display: flex; height: 100vh; }
           
           /* Left Sidebar - Widgets */
-          .widgets-sidebar { width: 280px; background: white; border-right: 1px solid #e1e3e5; overflow-y: auto; }
-          .sidebar-header { padding: 20px; border-bottom: 1px solid #e1e3e5; }
-          .sidebar-header h2 { margin: 0; font-size: 18px; font-weight: 600; }
-          .back-btn { background: #f3f4f6; color: #374151; border: 1px solid #d1d5db; padding: 8px 16px; border-radius: 6px; text-decoration: none; display: inline-block; margin-bottom: 15px; }
+          .widgets-sidebar { width: 320px; background: #1e1e2e; color: white; border-right: 1px solid #333; overflow-y: auto; }
+          .sidebar-header { padding: 20px; border-bottom: 1px solid #333; background: #2a2a3a; }
+          .sidebar-header h2 { margin: 0; font-size: 18px; font-weight: 600; color: #fff; }
+          .back-btn { background: #6366f1; color: white; border: none; padding: 8px 16px; border-radius: 6px; text-decoration: none; display: inline-block; margin-bottom: 15px; }
           
           .widget-category { margin-bottom: 20px; }
-          .category-title { padding: 15px 20px 10px; font-weight: 600; color: #374151; font-size: 14px; text-transform: uppercase; letter-spacing: 0.5px; }
+          .category-title { padding: 15px 20px 10px; font-weight: 600; color: #a1a1aa; font-size: 12px; text-transform: uppercase; letter-spacing: 1px; }
           
-          .widget-item { display: flex; align-items: center; padding: 12px 20px; cursor: pointer; transition: all 0.2s; border-left: 3px solid transparent; }
-          .widget-item:hover { background: #f3f4f6; border-left-color: #000000; }
+          .widget-item { display: flex; align-items: center; padding: 12px 20px; cursor: pointer; transition: all 0.2s; border-left: 3px solid transparent; border-radius: 0 8px 8px 0; margin: 2px 0; }
+          .widget-item:hover { background: #2a2a3a; border-left-color: #6366f1; }
           .widget-icon { margin-right: 12px; font-size: 18px; }
-          .widget-info h4 { margin: 0 0 2px 0; font-size: 14px; font-weight: 500; }
-          .widget-info p { margin: 0; font-size: 12px; color: #6b7280; }
+          .widget-info h4 { margin: 0 0 2px 0; font-size: 14px; font-weight: 500; color: #fff; }
+          .widget-info p { margin: 0; font-size: 12px; color: #a1a1aa; }
           
           /* Main Canvas */
           .canvas-area { flex: 1; display: flex; flex-direction: column; }
@@ -192,19 +192,33 @@ app.get('/builder/:pageId', (req, res) => {
             </div>
             
             <div class="widget-category">
-              <div class="category-title">Content</div>
-              <div class="widget-item" draggable="true" data-widget="text">
+              <div class="category-title">Basic</div>
+              <div class="widget-item" draggable="true" data-widget="heading">
                 <span class="widget-icon">📝</span>
                 <div class="widget-info">
-                  <h4>Text</h4>
-                  <p>Headings and paragraphs</p>
+                  <h4>Heading</h4>
+                  <p>Add eye-catching titles</p>
+                </div>
+              </div>
+              <div class="widget-item" draggable="true" data-widget="text-editor">
+                <span class="widget-icon">📄</span>
+                <div class="widget-info">
+                  <h4>Text Editor</h4>
+                  <p>Rich text content</p>
                 </div>
               </div>
               <div class="widget-item" draggable="true" data-widget="image">
                 <span class="widget-icon">🖼️</span>
                 <div class="widget-info">
                   <h4>Image</h4>
-                  <p>Photos and graphics</p>
+                  <p>Attractive images</p>
+                </div>
+              </div>
+              <div class="widget-item" draggable="true" data-widget="video">
+                <span class="widget-icon">🎥</span>
+                <div class="widget-info">
+                  <h4>Video</h4>
+                  <p>Embed videos</p>
                 </div>
               </div>
               <div class="widget-item" draggable="true" data-widget="button">
@@ -212,6 +226,133 @@ app.get('/builder/:pageId', (req, res) => {
                 <div class="widget-info">
                   <h4>Button</h4>
                   <p>Call-to-action buttons</p>
+                </div>
+              </div>
+              <div class="widget-item" draggable="true" data-widget="divider">
+                <span class="widget-icon">➖</span>
+                <div class="widget-info">
+                  <h4>Divider</h4>
+                  <p>Stylish separators</p>
+                </div>
+              </div>
+              <div class="widget-item" draggable="true" data-widget="spacer">
+                <span class="widget-icon">📏</span>
+                <div class="widget-info">
+                  <h4>Spacer</h4>
+                  <p>Add vertical space</p>
+                </div>
+              </div>
+              <div class="widget-item" draggable="true" data-widget="html">
+                <span class="widget-icon">💻</span>
+                <div class="widget-info">
+                  <h4>HTML</h4>
+                  <p>Custom HTML code</p>
+                </div>
+              </div>
+            </div>
+            
+            <div class="widget-category">
+              <div class="category-title">General</div>
+              <div class="widget-item" draggable="true" data-widget="icon">
+                <span class="widget-icon">⭐</span>
+                <div class="widget-info">
+                  <h4>Icon</h4>
+                  <p>Styled icons</p>
+                </div>
+              </div>
+              <div class="widget-item" draggable="true" data-widget="icon-box">
+                <span class="widget-icon">📦</span>
+                <div class="widget-info">
+                  <h4>Icon Box</h4>
+                  <p>Icon with text</p>
+                </div>
+              </div>
+              <div class="widget-item" draggable="true" data-widget="star-rating">
+                <span class="widget-icon">⭐</span>
+                <div class="widget-info">
+                  <h4>Star Rating</h4>
+                  <p>Display ratings</p>
+                </div>
+              </div>
+              <div class="widget-item" draggable="true" data-widget="alert">
+                <span class="widget-icon">⚠️</span>
+                <div class="widget-info">
+                  <h4>Alert</h4>
+                  <p>Attention grabbing alerts</p>
+                </div>
+              </div>
+              <div class="widget-item" draggable="true" data-widget="progress">
+                <span class="widget-icon">📊</span>
+                <div class="widget-info">
+                  <h4>Progress Bar</h4>
+                  <p>Animated progress</p>
+                </div>
+              </div>
+              <div class="widget-item" draggable="true" data-widget="counter">
+                <span class="widget-icon">🔢</span>
+                <div class="widget-info">
+                  <h4>Counter</h4>
+                  <p>Animated numbers</p>
+                </div>
+              </div>
+              <div class="widget-item" draggable="true" data-widget="testimonial">
+                <span class="widget-icon">💬</span>
+                <div class="widget-info">
+                  <h4>Testimonial</h4>
+                  <p>Customer reviews</p>
+                </div>
+              </div>
+              <div class="widget-item" draggable="true" data-widget="toggle">
+                <span class="widget-icon">🔄</span>
+                <div class="widget-info">
+                  <h4>Toggle</h4>
+                  <p>Collapsible content</p>
+                </div>
+              </div>
+              <div class="widget-item" draggable="true" data-widget="accordion">
+                <span class="widget-icon">📋</span>
+                <div class="widget-info">
+                  <h4>Accordion</h4>
+                  <p>Expandable sections</p>
+                </div>
+              </div>
+              <div class="widget-item" draggable="true" data-widget="tabs">
+                <span class="widget-icon">📑</span>
+                <div class="widget-info">
+                  <h4>Tabs</h4>
+                  <p>Tabbed content</p>
+                </div>
+              </div>
+              <div class="widget-item" draggable="true" data-widget="social-icons">
+                <span class="widget-icon">📱</span>
+                <div class="widget-info">
+                  <h4>Social Icons</h4>
+                  <p>Social media links</p>
+                </div>
+              </div>
+            </div>
+            
+            <div class="widget-category">
+              <div class="category-title">Media</div>
+              <div class="widget-item" draggable="true" data-widget="image-gallery">
+                <span class="widget-icon">🖼️</span>
+                <div class="widget-info">
+                  <h4>Image Gallery</h4>
+                  <p>Multiple images</p>
+                </div>
+              </div>
+              <div class="widget-item" draggable="true" data-widget="image-carousel">
+                <span class="widget-icon">🎠</span>
+                <div class="widget-info">
+                  <h4>Image Carousel</h4>
+                  <p>Sliding images</p>
+                </div>
+              </div>
+              <div class="widget-item" draggable="true" data-widget="audio">
+                <span class="widget-icon">🎵</span>
+                <div class="widget-info">
+                  <h4>Audio</h4>
+                  <p>Audio player</p>
                 </div>
               </div>
             </div>
@@ -225,11 +366,11 @@ app.get('/builder/:pageId', (req, res) => {
                   <p>Multi-column layout</p>
                 </div>
               </div>
-              <div class="widget-item" draggable="true" data-widget="spacer">
-                <span class="widget-icon">📏</span>
+              <div class="widget-item" draggable="true" data-widget="inner-section">
+                <span class="widget-icon">📐</span>
                 <div class="widget-info">
-                  <h4>Spacer</h4>
-                  <p>Add vertical space</p>
+                  <h4>Inner Section</h4>
+                  <p>Nested sections</p>
                 </div>
               </div>
             </div>
