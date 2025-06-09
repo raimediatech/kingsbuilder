@@ -4,8 +4,9 @@ import {
   ResourceList,
   ResourceItem,
   Thumbnail,
-  TextStyle,
-  Stack,
+  Text,
+  InlineStack,
+  VerticalStack,
   Spinner,
   EmptyState,
   Button,
@@ -184,7 +185,7 @@ export function ProductWidget({
             )}
             
             {showTitle && (
-              <TextStyle variation="strong">{product.title}</TextStyle>
+              <Text variant="bodyMd" fontWeight="bold">{product.title}</Text>
             )}
             
             {showPrice && product.variants && product.variants[0] && (
@@ -232,19 +233,19 @@ export function ProductWidget({
               }
               onClick={() => handleProductSelect(product)}
             >
-              <Stack>
+              <InlineStack gap="200">
                 {showTitle && (
-                  <Stack.Item fill>
-                    <TextStyle variation="strong">{product.title}</TextStyle>
-                  </Stack.Item>
+                  <InlineStack.Item fill>
+                    <Text variant="bodyMd" fontWeight="bold">{product.title}</Text>
+                  </InlineStack.Item>
                 )}
                 
                 {showPrice && product.variants && product.variants[0] && (
-                  <Stack.Item>
+                  <InlineStack.Item>
                     ${product.variants[0].price}
-                  </Stack.Item>
+                  </InlineStack.Item>
                 )}
-              </Stack>
+              </InlineStack>
             </ResourceItem>
           )}
         />
@@ -328,17 +329,17 @@ function ProductSelectionModal({
                 }
                 onClick={() => onSelect(product)}
               >
-                <Stack>
-                  <Stack.Item fill>
-                    <TextStyle variation="strong">{product.title}</TextStyle>
-                  </Stack.Item>
+                <InlineStack gap="200">
+                  <InlineStack.Item fill>
+                    <Text variant="bodyMd" fontWeight="bold">{product.title}</Text>
+                  </InlineStack.Item>
                   
                   {product.variants && product.variants[0] && (
-                    <Stack.Item>
+                    <InlineStack.Item>
                       ${product.variants[0].price}
-                    </Stack.Item>
+                    </InlineStack.Item>
                   )}
-                </Stack>
+                </InlineStack>
               </ResourceItem>
             )}
           />

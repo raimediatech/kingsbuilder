@@ -4,8 +4,9 @@ import {
   ResourceList,
   ResourceItem,
   Thumbnail,
-  TextStyle,
-  Stack,
+  Text,
+  InlineStack,
+  VerticalStack,
   Spinner,
   EmptyState,
   Button,
@@ -177,7 +178,7 @@ export function CollectionWidget({
             )}
             
             {showTitle && (
-              <TextStyle variation="strong">{collection.title}</TextStyle>
+              <Text variant="bodyMd" fontWeight="bold">{collection.title}</Text>
             )}
             
             {showProductCount && (
@@ -225,19 +226,19 @@ export function CollectionWidget({
               }
               onClick={() => handleCollectionSelect(collection)}
             >
-              <Stack>
+              <InlineStack gap="200">
                 {showTitle && (
-                  <Stack.Item fill>
-                    <TextStyle variation="strong">{collection.title}</TextStyle>
-                  </Stack.Item>
+                  <InlineStack.Item fill>
+                    <Text variant="bodyMd" fontWeight="bold">{collection.title}</Text>
+                  </InlineStack.Item>
                 )}
                 
                 {showProductCount && (
-                  <Stack.Item>
+                  <InlineStack.Item>
                     {collection.products_count} products
-                  </Stack.Item>
+                  </InlineStack.Item>
                 )}
-              </Stack>
+              </InlineStack>
             </ResourceItem>
           )}
         />
@@ -321,15 +322,15 @@ function CollectionSelectionModal({
                 }
                 onClick={() => onSelect(collection)}
               >
-                <Stack>
-                  <Stack.Item fill>
-                    <TextStyle variation="strong">{collection.title}</TextStyle>
-                  </Stack.Item>
+                <InlineStack gap="200">
+                  <InlineStack.Item fill>
+                    <Text variant="bodyMd" fontWeight="bold">{collection.title}</Text>
+                  </InlineStack.Item>
                   
-                  <Stack.Item>
+                  <InlineStack.Item>
                     {collection.products_count} products
-                  </Stack.Item>
-                </Stack>
+                  </InlineStack.Item>
+                </InlineStack>
               </ResourceItem>
             )}
           />

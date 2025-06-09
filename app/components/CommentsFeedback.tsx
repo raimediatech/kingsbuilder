@@ -4,7 +4,8 @@ import {
   Button,
   Text,
   TextField,
-  LegacyStack,
+  InlineStack,
+  VerticalStack,
   ResourceList,
   ResourceItem,
   Avatar,
@@ -245,7 +246,7 @@ export default function CommentsFeedback({ pageId }: { pageId: string }) {
   return (
     <Card>
       <Card.Section>
-        <LegacyStack distribution="equalSpacing" alignment="center">
+        <InlineStack align="space-between">
           <Text variant="headingMd" as="h2">
             Comments & Feedback
           </Text>
@@ -260,7 +261,7 @@ export default function CommentsFeedback({ pageId }: { pageId: string }) {
               Refresh
             </Button>
           </ButtonGroup>
-        </LegacyStack>
+        </InlineStack>
       </Card.Section>
 
       {error && (
@@ -272,7 +273,7 @@ export default function CommentsFeedback({ pageId }: { pageId: string }) {
       )}
 
       <Card.Section>
-        <LegacyStack vertical>
+        <VerticalStack gap="400">
           <TextField
             label="Add a comment"
             value={newComment}
@@ -281,20 +282,20 @@ export default function CommentsFeedback({ pageId }: { pageId: string }) {
             autoComplete="off"
             placeholder="Type your comment here..."
           />
-          <LegacyStack distribution="trailing">
+          <InlineStack align="end">
             <Button primary onClick={addComment} loading={isLoading}>
               Add Comment
             </Button>
-          </LegacyStack>
-        </LegacyStack>
+          </InlineStack>
+        </VerticalStack>
       </Card.Section>
 
       <Card.Section>
         {isLoading && !filteredComments.length ? (
           <Box padding="4">
-            <LegacyStack distribution="center">
+            <InlineStack align="center">
               <Spinner accessibilityLabel="Loading comments" size="large" />
-            </LegacyStack>
+            </InlineStack>
           </Box>
         ) : filteredComments.length === 0 ? (
           <EmptyState
