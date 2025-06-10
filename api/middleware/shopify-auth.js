@@ -67,6 +67,7 @@ function verifyShopifyHmac(req, res, next) {
  */
 function verifyShopifyJWT(req, res, next) {
   const idToken = req.query.id_token;
+  const jwt = require('jsonwebtoken');
   
   // If no ID token, skip verification
   if (!idToken) {
@@ -74,12 +75,78 @@ function verifyShopifyJWT(req, res, next) {
   }
   
   try {
-    // For now, just log the token and proceed
-    // In a production app, you would verify the JWT signature
-    console.log('Shopify JWT token received');
+    // Extract the shop from the token if possible
+    if (idToken.includes('.')) {
+      const tokenParts = idToken.split('.');
+      if (tokenParts.length >= 2) {
+        try {
+          const payload = JSON.parse(Buffer.from(tokenParts[1], 'base64').toString());
+          if (payload && payload.iss) {
+            // Extract shop from issuer (iss) claim
+            const issMatch = payload.iss.match(/https:\/\/([^\/]+)/);
+            if (issMatch && issMatch[1]) {
+              const shop = issMatch[1];
+              // Store the shop in the request for later use
+              req.shopifyShop = shop;
+              console.log('Extracted shop from JWT:', shop);
+              
+              // Also store in session if available
+              if (req.session) {
+                req.session.shop = shop;
+              }
+              
+              // Store in cookie for future requests
+              res.cookie('shopOrigin', shop, {
+                httpOnly: false,
+                secure: process.env.COOKIE_SECURE === 'true',
+                sameSite: process.env.COOKIE_SAME_SITE || 'none',
+                maxAge: 24 * 60 * 60 * 1000 // 24 hours
+              });
+            }
+          }
+          
+          // Store the access token if present in the payload
+          if (payload && payload.access_token) {
+            req.shopifyAccessToken = payload.access_token;
+            
+            // Also store in session if available
+            if (req.session) {
+              req.session.accessToken = payload.access_token;
+            }
+            
+            // Store in secure cookie for future requests
+            res.cookie('shopifyAccessToken', payload.access_token, {
+              httpOnly: true,
+              secure: process.env.COOKIE_SECURE === 'true',
+              sameSite: process.env.COOKIE_SAME_SITE || 'none',
+              maxAge: 24 * 60 * 60 * 1000 // 24 hours
+            });
+          }
+        } catch (e) {
+          console.error('Error parsing JWT payload:', e);
+        }
+      }
+    }
+    
+    // Try to verify the JWT if we have a secret
+    const secret = process.env.SHOPIFY_API_SECRET;
+    if (secret) {
+      try {
+        const verified = jwt.verify(idToken, secret, {
+          algorithms: ['HS256'],
+          ignoreExpiration: false
+        });
+        console.log('JWT verification successful');
+      } catch (jwtError) {
+        console.warn('JWT verification failed:', jwtError.message);
+        // Continue anyway for development purposes
+      }
+    }
+    
+    console.log('Shopify JWT token processed');
     return next();
   } catch (error) {
-    console.error('Error verifying Shopify JWT:', error);
+    console.error('Error processing Shopify JWT:', error);
     return next();
   }
 }

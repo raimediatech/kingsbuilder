@@ -16,6 +16,10 @@
       "dest": "/api/index.js"
     },
     {
+      "src": "/install",
+      "dest": "/public/install.html"
+    },
+    {
       "src": "/editor",
       "dest": "/public/editor.html"
     },
@@ -30,5 +34,13 @@
       "src": "/(.*)",
       "dest": "/api/index.js"
     }
-  ]
+  ],
+  "env": {
+    "NODE_ENV": "production",
+    "SHOPIFY_APP_URL": "https://kingsbuilder.vercel.app",
+    "FRONTEND_URL": "https://kingsbuilder.vercel.app",
+    "CORS_ORIGIN": "https://admin.shopify.com,https://*.myshopify.com,https://kingsbuilder.vercel.app",
+    "COOKIE_SECURE": "true",
+    "COOKIE_SAME_SITE": "none"
+  }
 }

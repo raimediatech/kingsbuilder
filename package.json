@@ -3,8 +3,8 @@
   "private": true,
   "scripts": {
     "build": "echo \"Build completed\"",
-    "dev": "node api/index.js",
-    "start": "node api/index.js"
+    "dev": "nodemon start.js",
+    "start": "node start.js"
   },
   "dependencies": {
     "@types/bcryptjs": "^2.4.6",
@@ -17,8 +17,12 @@
     "dotenv": "^16.4.5",
     "express": "^4.21.2",
     "jsonwebtoken": "^9.0.2",
+    "mongodb": "^5.0.0",
     "morgan": "^1.10.0",
     "shopify-api-node": "^3.15.0"
+  },
+  "devDependencies": {
+    "nodemon": "^3.0.1"
   },
   "engines": {
     "node": ">=16.0.0"

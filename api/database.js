@@ -1,25 +1,70 @@
 // api/database.js - Simple database models for KingsBuilder
 const { MongoClient } = require('mongodb');
+require('dotenv').config();
 
-const DATABASE_URL = process.env.DATABASE_URL || 'mongodb+srv://kingsbuilder_admin:2BAvGrHLw63hWd3@cluster0.3wvn3jk.mongodb.net/kingsbuilder?retryWrites=true&w=majority&appName=Cluster0';
+// Use the DATABASE_URL from environment variables
+const DATABASE_URL = process.env.DATABASE_URL || process.env.MONGODB_URI;
 
 let db = null;
 let client = null;
 
-// Connect to database
-async function connectToDatabase() {
+// Connect to database with retry logic
+async function connectToDatabase(retryCount = 3, retryDelay = 2000) {
   try {
     if (db) return db;
     
-    client = new MongoClient(DATABASE_URL);
-    await client.connect();
-    db = client.db('kingsbuilder');
+    console.log('Connecting to MongoDB...');
     
-    console.log('Connected to MongoDB successfully');
-    return db;
+    if (!DATABASE_URL) {
+      console.error('No MongoDB connection string provided in environment variables');
+      return null;
+    }
+    
+    client = new MongoClient(DATABASE_URL, {
+      useNewUrlParser: true,
+      useUnifiedTopology: true,
+      serverSelectionTimeoutMS: 10000, // 10 second timeout
+      connectTimeoutMS: 10000,
+      socketTimeoutMS: 45000,
+      maxPoolSize: 10, // Connection pooling
+      minPoolSize: 5
+    });
+    
+    try {
+      await client.connect();
+      db = client.db('kingsbuilder');
+      
+      // Test the connection with a simple query
+      await db.command({ ping: 1 });
+      console.log('Connected to MongoDB successfully');
+      
+      // Set up connection monitoring
+      client.on('close', () => {
+        console.warn('MongoDB connection closed');
+        db = null;
+        // Attempt to reconnect
+        setTimeout(() => connectToDatabase(), 5000);
+      });
+      
+      client.on('error', (err) => {
+        console.error('MongoDB connection error:', err);
+      });
+      
+      return db;
+    } catch (connectionError) {
+      console.error(`Failed to connect to MongoDB (attempt ${4 - retryCount} of 3):`, connectionError);
+      
+      if (retryCount > 0) {
+        console.log(`Retrying in ${retryDelay / 1000} seconds...`);
+        await new Promise(resolve => setTimeout(resolve, retryDelay));
+        return connectToDatabase(retryCount - 1, retryDelay * 1.5);
+      } else {
+        console.error('Maximum retry attempts reached. Could not connect to MongoDB.');
+        return null;
+      }
+    }
   } catch (error) {
-    console.error('Failed to connect to MongoDB:', error);
-    // For demo purposes, we'll continue without database
+    console.error('Unexpected error in database connection:', error);
     return null;
   }
 }
@@ -53,22 +98,17 @@ class PageModel {
   
   static async create(pageData) {
     try {
-      if (!db) {
-        // Return mock data for demo
-        return {
-          _id: Date.now().toString(),
-          ...pageData,
-          createdAt: new Date(),
-          updatedAt: new Date()
-        };
-      }
-      
       const now = new Date();
       const page = {
         ...pageData,
         createdAt: now,
         updatedAt: now
       };
+      
+      if (!db) {
+        console.error('No database connection available');
+        throw new Error('Database connection not available');
+      }
       
       const result = await db.collection('pages').insertOne(page);
       return { ...page, _id: result.insertedId };

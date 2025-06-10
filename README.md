@@ -1,17 +1,18 @@
 # KingsBuilder - Shopify Page Builder App
 
-KingsBuilder is a powerful page builder app for Shopify that allows merchants to create custom pages without writing any code. With an intuitive drag-and-drop interface and pre-built templates, creating beautiful pages has never been easier.
+KingsBuilder is a powerful page builder app for Shopify that allows merchants to create custom pages without writing any code. With an intuitive drag-and-drop interface and real-time preview, creating beautiful pages has never been easier.
 
 ![KingsBuilder Logo](https://via.placeholder.com/200x200.png?text=KB)
 
 ## Features
 
 - **Drag-and-Drop Editor**: Create pages visually with no coding required
-- **Pre-built Templates**: Start with professionally designed templates
+- **Real-time Preview**: See your changes as you make them
 - **Mobile Responsive**: All pages look great on any device
 - **SEO Optimization**: Built-in tools to improve your page's search ranking
-- **Custom Domains**: Use your own domain for landing pages
-- **Analytics Integration**: Track page performance
+- **Shopify Integration**: Seamlessly integrates with your Shopify store
+- **Save & Publish**: Save drafts and publish when ready
+- **Dashboard**: Manage all your pages in one place
 
 ## Deployment Instructions
 
@@ -70,6 +71,20 @@ If you encounter the "accounts.shopify.com refused to connect" error:
 2. Verify that your redirect URLs are properly configured in the Shopify Partner Dashboard
 3. Make sure CORS is properly configured for Shopify domains
 4. Check that your app is using the correct AppBridge version
+
+If pages aren't loading from Shopify:
+
+1. Check that your access token is being properly stored and retrieved
+2. Verify that your Shopify API version is correct (currently using 2023-10)
+3. Check the browser console and server logs for any API errors
+4. Make sure your app has the necessary scopes (write_content, read_content)
+
+If you can't save or update pages:
+
+1. Check that your API endpoints are correctly configured
+2. Verify that your MongoDB connection is working
+3. Check that your shop domain is being properly passed in the headers
+4. Make sure your access token has the necessary permissions
 
 ## Local Development
 

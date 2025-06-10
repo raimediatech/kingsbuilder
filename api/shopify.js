@@ -1,4 +1,7 @@
 const axios = require('axios');
+// Temporarily comment out to fix startup issue
+// const { makeApiRequest } = require('./utils/api-helpers');
+// const { getAccessToken } = require('./utils/session');
 
 // Load environment variables
 try {
@@ -9,13 +12,19 @@ try {
 }
 
 const SHOPIFY_API_KEY = process.env.SHOPIFY_API_KEY || '128d69fb5441ba3eda3ae4694c71b175';
-const SHOPIFY_API_VERSION = '2023-01';
+const SHOPIFY_API_SECRET = process.env.SHOPIFY_API_SECRET;
+const SHOPIFY_API_VERSION = '2023-10';
 
 /**
  * Create a new page in Shopify
  */
 async function createShopifyPage(shop, accessToken, pageData) {
   try {
+    // If no access token provided, throw error
+    if (!accessToken) {
+      throw new Error('No access token available for this shop');
+    }
+    
     const response = await axios({
       method: 'POST',
       url: `https://${shop}/admin/api/${SHOPIFY_API_VERSION}/pages.json`,
@@ -35,7 +44,7 @@ async function createShopifyPage(shop, accessToken, pageData) {
 
     return response.data;
   } catch (error) {
-    console.error('Error creating Shopify page:', error.response ? error.response.data : error.message);
+    console.error('Error creating Shopify page:', error.message);
     throw error;
   }
 }
@@ -45,6 +54,11 @@ async function createShopifyPage(shop, accessToken, pageData) {
  */
 async function updateShopifyPage(shop, accessToken, pageId, pageData) {
   try {
+    // If no access token provided, throw error
+    if (!accessToken) {
+      throw new Error('No access token available for this shop');
+    }
+    
     const response = await axios({
       method: 'PUT',
       url: `https://${shop}/admin/api/${SHOPIFY_API_VERSION}/pages/${pageId}.json`,
@@ -65,7 +79,7 @@ async function updateShopifyPage(shop, accessToken, pageId, pageData) {
 
     return response.data;
   } catch (error) {
-    console.error('Error updating Shopify page:', error.response ? error.response.data : error.message);
+    console.error('Error updating Shopify page:', error.message);
     throw error;
   }
 }
@@ -75,6 +89,11 @@ async function updateShopifyPage(shop, accessToken, pageId, pageData) {
  */
 async function getShopifyPages(shop, accessToken) {
   try {
+    // If no access token provided, throw error
+    if (!accessToken) {
+      throw new Error('No access token available for this shop');
+    }
+    
     const response = await axios({
       method: 'GET',
       url: `https://${shop}/admin/api/${SHOPIFY_API_VERSION}/pages.json`,
@@ -86,7 +105,7 @@ async function getShopifyPages(shop, accessToken) {
 
     return response.data;
   } catch (error) {
-    console.error('Error fetching Shopify pages:', error.response ? error.response.data : error.message);
+    console.error('Error fetching Shopify pages:', error.message);
     throw error;
   }
 }
@@ -96,6 +115,11 @@ async function getShopifyPages(shop, accessToken) {
  */
 async function getShopifyPageById(shop, accessToken, pageId) {
   try {
+    // If no access token provided, throw error
+    if (!accessToken) {
+      throw new Error('No access token available for this shop');
+    }
+    
     const response = await axios({
       method: 'GET',
       url: `https://${shop}/admin/api/${SHOPIFY_API_VERSION}/pages/${pageId}.json`,
@@ -107,7 +131,7 @@ async function getShopifyPageById(shop, accessToken, pageId) {
 
     return response.data;
   } catch (error) {
-    console.error('Error fetching Shopify page:', error.response ? error.response.data : error.message);
+    console.error('Error fetching Shopify page:', error.message);
     throw error;
   }
 }
@@ -117,6 +141,11 @@ async function getShopifyPageById(shop, accessToken, pageId) {
  */
 async function deleteShopifyPage(shop, accessToken, pageId) {
   try {
+    // If no access token provided, throw error
+    if (!accessToken) {
+      throw new Error('No access token available for this shop');
+    }
+    
     const response = await axios({
       method: 'DELETE',
       url: `https://${shop}/admin/api/${SHOPIFY_API_VERSION}/pages/${pageId}.json`,
@@ -128,7 +157,7 @@ async function deleteShopifyPage(shop, accessToken, pageId) {
 
     return response.data;
   } catch (error) {
-    console.error('Error deleting Shopify page:', error.response ? error.response.data : error.message);
+    console.error('Error deleting Shopify page:', error.message);
     throw error;
   }
 }
