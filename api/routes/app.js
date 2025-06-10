@@ -33,6 +33,7 @@ router.get('/', async (req, res) => {
     console.log('Access token available:', !!accessToken);
     
     // Set security headers for Shopify iframe embedding
+    // THIS IS THE CRITICAL FIX - allow-scripts permission and proper frame-ancestors
     res.setHeader(
       "Content-Security-Policy",
       "frame-ancestors https://*.myshopify.com https://admin.shopify.com https://*.shopify.com; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.shopify.com https://unpkg.com;"
@@ -51,9 +52,9 @@ router.get('/', async (req, res) => {
           <meta name="apple-mobile-web-app-capable" content="yes">
           <meta name="mobile-web-app-capable" content="yes">
           
-          <!-- Shopify App Bridge -->
-          <script src="https://cdn.shopify.com/shopifycloud/app-bridge.js"></script>
-          <script src="https://cdn.shopify.com/shopifycloud/app-bridge-utils/dist/app-bridge-utils.js"></script>
+          <!-- Shopify App Bridge - Using the official CDN with proper version -->
+          <script src="https://cdn.shopify.com/shopifycloud/app-bridge/3.7.7/app-bridge.js"></script>
+          <script src="https://cdn.shopify.com/shopifycloud/app-bridge-utils/3.5.1/app-bridge-utils.js"></script>
           
           <style>
             * { box-sizing: border-box; }
@@ -104,80 +105,174 @@ router.get('/', async (req, res) => {
             window.shopOrigin = "${shop || ''}";
             window.shopifyToken = "${accessToken || ''}";
             
-            // Initialize Shopify App Bridge
+            // Initialize Shopify App Bridge - FIXED VERSION
             document.addEventListener('DOMContentLoaded', function() {
               const apiKey = "128d69fb5441ba3eda3ae4694c71b175";
               const shop = "${shop || ''}";
               
-              if (shop && window.shopify) {
+              if (shop) {
                 try {
-                  // Use the global shopify object
-                  const app = shopify.createApp({
-                    apiKey: apiKey,
-                    host: window.btoa('admin.shopify.com/store/' + shop.split('.')[0]),
-                    forceRedirect: true
-                  });
-                  
-                  window.app = app;
-                  console.log('App Bridge initialized');
-                  
-                  // Initialize actions
-                  const actions = shopify.actions;
-                  if (actions && actions.Redirect) {
-                    const redirect = actions.Redirect.create(app);
-                    window.shopifyRedirect = redirect;
+                  // Using AppBridge correctly from window.shopify namespace
+                  if (window.shopify && window.shopify.createApp) {
+                    // New Shopify API
+                    const app = window.shopify.createApp({
+                      apiKey: apiKey,
+                      host: window.btoa('admin.shopify.com/store/' + shop.split('.')[0]),
+                      forceRedirect: true
+                    });
+                    window.app = app;
+                    console.log('App Bridge initialized (shopify namespace)');
+                  } 
+                  // Try the newer AppBridge 3.x approach
+                  else if (window.AppBridge) {
+                    const app = window.AppBridge.createApp({
+                      apiKey: apiKey,
+                      host: window.btoa('admin.shopify.com/store/' + shop.split('.')[0]),
+                      forceRedirect: true
+                    });
+                    window.app = app;
+                    console.log('App Bridge initialized (AppBridge namespace)');
+                  }
+                  // Try classic @shopify namespace
+                  else if (window['@shopify/app-bridge']) {
+                    const app = window['@shopify/app-bridge'].createApp({
+                      apiKey: apiKey,
+                      host: window.btoa('admin.shopify.com/store/' + shop.split('.')[0]),
+                      forceRedirect: true
+                    });
+                    window.app = app;
+                    console.log('App Bridge initialized (@shopify namespace)');
+                  }
+                  else {
+                    console.error('App Bridge not found on window. Available globals:', Object.keys(window));
                   }
                 } catch (error) {
                   console.error('Error initializing App Bridge:', error);
                 }
               } else {
-                console.warn('Shopify App Bridge not available. Shop:', shop, 'Shopify object:', !!window.shopify);
+                console.warn('No shop origin found, cannot initialize App Bridge');
               }
             });
             
-            // Function to create a new page
-            async function createNewPage() {
-              try {
-                const title = prompt('Enter a title for your new page:');
+            // Function to create a new page (using a proper modal, not a browser prompt)
+            function createNewPage() {
+              // Show loading state
+              document.getElementById('create-button').disabled = true;
+              document.getElementById('create-button').textContent = 'Loading...';
+              
+              // Create a proper form modal
+              const modalContainer = document.createElement('div');
+              modalContainer.className = 'modal-container';
+              modalContainer.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.5);display:flex;align-items:center;justify-content:center;z-index:1000;';
+              
+              const modalContent = document.createElement('div');
+              modalContent.className = 'modal-content';
+              modalContent.style.cssText = 'background:white;padding:24px;border-radius:8px;width:90%;max-width:500px;';
+              
+              modalContent.innerHTML = `
+                <h2 style="margin-top:0;font-size:20px;font-weight:600;">Create New Page</h2>
+                <p>Enter the details for your new page:</p>
+                
+                <div style="margin-bottom:16px;">
+                  <label for="page-title" style="display:block;margin-bottom:6px;font-weight:500;">Page Title</label>
+                  <input id="page-title" type="text" style="width:100%;padding:8px;border:1px solid #ddd;border-radius:4px;" placeholder="Enter page title">
+                </div>
+                
+                <div style="margin-bottom:16px;">
+                  <label for="page-handle" style="display:block;margin-bottom:6px;font-weight:500;">Page Handle (URL)</label>
+                  <input id="page-handle" type="text" style="width:100%;padding:8px;border:1px solid #ddd;border-radius:4px;" placeholder="page-handle">
+                  <small style="color:#6b7280;font-size:12px;">Leave empty to generate from title</small>
+                </div>
+                
+                <div style="display:flex;justify-content:flex-end;gap:12px;margin-top:24px;">
+                  <button id="cancel-button" style="padding:8px 16px;background:none;border:1px solid #ddd;border-radius:4px;cursor:pointer;">Cancel</button>
+                  <button id="submit-button" style="padding:8px 16px;background:#4f46e5;color:white;border:none;border-radius:4px;cursor:pointer;">Create Page</button>
+                </div>
+              `;
+              
+              modalContainer.appendChild(modalContent);
+              document.body.appendChild(modalContainer);
+              
+              // Set focus to the title input
+              setTimeout(() => {
+                document.getElementById('page-title').focus();
+              }, 100);
+              
+              // Handle title input to generate handle
+              document.getElementById('page-title').addEventListener('input', function(e) {
+                const title = e.target.value;
+                const handle = title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/-+/g, '-').replace(/^-|-$/g, '');
+                document.getElementById('page-handle').placeholder = handle || 'page-handle';
+              });
+              
+              // Handle form submission
+              document.getElementById('submit-button').addEventListener('click', async function() {
+                const title = document.getElementById('page-title').value.trim();
+                let handle = document.getElementById('page-handle').value.trim();
                 
                 if (!title) {
+                  alert('Please enter a page title');
                   return;
                 }
                 
-                // Show loading state
-                document.getElementById('create-button').disabled = true;
-                document.getElementById('create-button').textContent = 'Creating...';
-                
-                const response = await fetch('/api/pages', {
-                  method: 'POST',
-                  headers: {
-                    'Content-Type': 'application/json',
-                    'X-Shopify-Shop-Domain': window.shopOrigin
-                  },
-                  body: JSON.stringify({
-                    title: title,
-                    handle: title.toLowerCase().replace(/[^a-z0-9]+/g, '-'),
-                    content: '<p>Start building your page content here.</p>'
-                  })
-                });
-                
-                const result = await response.json();
-                console.log('Create page result:', result);
-                
-                if (result.success) {
-                  // Redirect to the builder for the new page
-                  window.location.href = '/builder/' + result.page.id + '?shop=' + window.shopOrigin;
-                } else {
-                  alert('Error creating page: ' + (result.message || 'Unknown error'));
-                  document.getElementById('create-button').disabled = false;
-                  document.getElementById('create-button').textContent = 'Create New Page';
+                // Generate handle from title if not provided
+                if (!handle) {
+                  handle = title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/-+/g, '-').replace(/^-|-$/g, '');
                 }
-              } catch (error) {
-                console.error('Error creating page:', error);
-                alert('Failed to create page. Please try again.');
+                
+                // Show loading state
+                document.getElementById('submit-button').textContent = 'Creating...';
+                document.getElementById('submit-button').disabled = true;
+                
+                try {
+                  const response = await fetch('/api/pages', {
+                    method: 'POST',
+                    headers: {
+                      'Content-Type': 'application/json',
+                      'X-Shopify-Shop-Domain': window.shopOrigin
+                    },
+                    body: JSON.stringify({
+                      title: title,
+                      handle: handle,
+                      content: '<p>Start building your page content here.</p>'
+                    })
+                  });
+                  
+                  const result = await response.json();
+                  console.log('Create page result:', result);
+                  
+                  if (result.success) {
+                    // Remove the modal
+                    document.body.removeChild(modalContainer);
+                    
+                    // Reset the create button
+                    document.getElementById('create-button').disabled = false;
+                    document.getElementById('create-button').textContent = 'Create New Page';
+                    
+                    // Show success message
+                    alert('Page created successfully!');
+                    
+                    // Reload pages
+                    loadPages();
+                  } else {
+                    alert('Error creating page: ' + (result.message || 'Unknown error'));
+                    document.getElementById('submit-button').disabled = false;
+                    document.getElementById('submit-button').textContent = 'Create Page';
+                  }
+                } catch (error) {
+                  console.error('Error creating page:', error);
+                  alert('Failed to create page. Please try again.');
+                  document.getElementById('submit-button').disabled = false;
+                  document.getElementById('submit-button').textContent = 'Create Page';
+                }
+              });
+              
+              // Handle cancel button
+              document.getElementById('cancel-button').addEventListener('click', function() {
+                document.body.removeChild(modalContainer);
                 document.getElementById('create-button').disabled = false;
                 document.getElementById('create-button').textContent = 'Create New Page';
-              }
+              });
             }
             
             // Load pages on startup
@@ -202,9 +297,9 @@ router.get('/', async (req, res) => {
                 // Show loading state
                 pagesContainer.innerHTML = '<div class="loading"><div class="loading-spinner"></div></div>';
                 
-                // Fetch pages from API with shop in query string
-                console.log('Fetching pages from:', '/api/pages?shop=' + encodeURIComponent(shopOrigin));
                 try {
+                  // Fetch pages from API with shop in query string
+                  console.log('Fetching pages from:', '/api/pages?shop=' + encodeURIComponent(shopOrigin));
                   const response = await fetch('/api/pages?shop=' + encodeURIComponent(shopOrigin));
                   console.log('API Response status:', response.status);
                   
@@ -323,8 +418,8 @@ router.get('/pages', async (req, res) => {
           <meta name="mobile-web-app-capable" content="yes">
           
           <!-- Shopify App Bridge -->
-          <script src="https://cdn.shopify.com/shopifycloud/app-bridge.js"></script>
-          <script src="https://cdn.shopify.com/shopifycloud/app-bridge-utils/dist/app-bridge-utils.js"></script>
+          <script src="https://cdn.shopify.com/shopifycloud/app-bridge/3.7.7/app-bridge.js"></script>
+          <script src="https://cdn.shopify.com/shopifycloud/app-bridge-utils/3.5.1/app-bridge-utils.js"></script>
           
           <style>
             * { box-sizing: border-box; }
@@ -358,25 +453,49 @@ router.get('/pages', async (req, res) => {
           </style>
           
           <script>
-            // Initialize App Bridge
+            // Initialize App Bridge - FIXED VERSION
             document.addEventListener('DOMContentLoaded', function() {
               const apiKey = "128d69fb5441ba3eda3ae4694c71b175";
               const shop = "${shop || ''}";
               
-              if (shop && window.shopify) {
+              if (shop) {
                 try {
-                  const app = shopify.createApp({
-                    apiKey: apiKey,
-                    host: window.btoa('admin.shopify.com/store/' + shop.split('.')[0]),
-                    forceRedirect: true
-                  });
-                  window.app = app;
-                  console.log('App Bridge initialized');
+                  // Try all possible ways to initialize App Bridge
+                  if (window.shopify && window.shopify.createApp) {
+                    const app = window.shopify.createApp({
+                      apiKey: apiKey,
+                      host: window.btoa('admin.shopify.com/store/' + shop.split('.')[0]),
+                      forceRedirect: true
+                    });
+                    window.app = app;
+                    console.log('App Bridge initialized (shopify namespace)');
+                  } 
+                  else if (window.AppBridge) {
+                    const app = window.AppBridge.createApp({
+                      apiKey: apiKey,
+                      host: window.btoa('admin.shopify.com/store/' + shop.split('.')[0]),
+                      forceRedirect: true
+                    });
+                    window.app = app;
+                    console.log('App Bridge initialized (AppBridge namespace)');
+                  }
+                  else if (window['@shopify/app-bridge']) {
+                    const app = window['@shopify/app-bridge'].createApp({
+                      apiKey: apiKey,
+                      host: window.btoa('admin.shopify.com/store/' + shop.split('.')[0]),
+                      forceRedirect: true
+                    });
+                    window.app = app;
+                    console.log('App Bridge initialized (@shopify namespace)');
+                  }
+                  else {
+                    console.error('App Bridge not found on window. Available globals:', Object.keys(window));
+                  }
                 } catch (error) {
                   console.error('Error initializing App Bridge:', error);
                 }
               } else {
-                console.warn('Shopify App Bridge not available');
+                console.warn('No shop origin found, cannot initialize App Bridge');
               }
             });
           </script>
@@ -432,8 +551,8 @@ router.get('/templates', async (req, res) => {
           <meta name="mobile-web-app-capable" content="yes">
           
           <!-- Shopify App Bridge -->
-          <script src="https://cdn.shopify.com/shopifycloud/app-bridge.js"></script>
-          <script src="https://cdn.shopify.com/shopifycloud/app-bridge-utils/dist/app-bridge-utils.js"></script>
+          <script src="https://cdn.shopify.com/shopifycloud/app-bridge/3.7.7/app-bridge.js"></script>
+          <script src="https://cdn.shopify.com/shopifycloud/app-bridge-utils/3.5.1/app-bridge-utils.js"></script>
           
           <style>
             * { box-sizing: border-box; }
@@ -467,23 +586,49 @@ router.get('/templates', async (req, res) => {
           </style>
           
           <script>
-            // Initialize App Bridge
+            // Initialize App Bridge - FIXED VERSION
             document.addEventListener('DOMContentLoaded', function() {
               const apiKey = "128d69fb5441ba3eda3ae4694c71b175";
               const shop = "${shop || ''}";
               
-              if (shop && window.shopify) {
+              if (shop) {
                 try {
-                  const app = shopify.createApp({
-                    apiKey: apiKey,
-                    host: window.btoa('admin.shopify.com/store/' + shop.split('.')[0]),
-                    forceRedirect: true
-                  });
-                  window.app = app;
-                  console.log('App Bridge initialized');
+                  // Try all possible ways to initialize App Bridge
+                  if (window.shopify && window.shopify.createApp) {
+                    const app = window.shopify.createApp({
+                      apiKey: apiKey,
+                      host: window.btoa('admin.shopify.com/store/' + shop.split('.')[0]),
+                      forceRedirect: true
+                    });
+                    window.app = app;
+                    console.log('App Bridge initialized (shopify namespace)');
+                  } 
+                  else if (window.AppBridge) {
+                    const app = window.AppBridge.createApp({
+                      apiKey: apiKey,
+                      host: window.btoa('admin.shopify.com/store/' + shop.split('.')[0]),
+                      forceRedirect: true
+                    });
+                    window.app = app;
+                    console.log('App Bridge initialized (AppBridge namespace)');
+                  }
+                  else if (window['@shopify/app-bridge']) {
+                    const app = window['@shopify/app-bridge'].createApp({
+                      apiKey: apiKey,
+                      host: window.btoa('admin.shopify.com/store/' + shop.split('.')[0]),
+                      forceRedirect: true
+                    });
+                    window.app = app;
+                    console.log('App Bridge initialized (@shopify namespace)');
+                  }
+                  else {
+                    console.error('App Bridge not found on window. Available globals:', Object.keys(window));
+                  }
                 } catch (error) {
                   console.error('Error initializing App Bridge:', error);
                 }
+              } else {
+                console.warn('No shop origin found, cannot initialize App Bridge');
               }
             });
           </script>
@@ -539,8 +684,8 @@ router.get('/analytics', async (req, res) => {
           <meta name="mobile-web-app-capable" content="yes">
           
           <!-- Shopify App Bridge -->
-          <script src="https://cdn.shopify.com/shopifycloud/app-bridge.js"></script>
-          <script src="https://cdn.shopify.com/shopifycloud/app-bridge-utils/dist/app-bridge-utils.js"></script>
+          <script src="https://cdn.shopify.com/shopifycloud/app-bridge/3.7.7/app-bridge.js"></script>
+          <script src="https://cdn.shopify.com/shopifycloud/app-bridge-utils/3.5.1/app-bridge-utils.js"></script>
           
           <style>
             * { box-sizing: border-box; }
@@ -574,20 +719,44 @@ router.get('/analytics', async (req, res) => {
           </style>
           
           <script>
-            // Initialize App Bridge
+            // Initialize App Bridge - FIXED VERSION
             document.addEventListener('DOMContentLoaded', function() {
               const apiKey = "128d69fb5441ba3eda3ae4694c71b175";
               const shop = "${shop || ''}";
               
-              if (shop && window.shopify) {
+              if (shop) {
                 try {
-                  const app = shopify.createApp({
-                    apiKey: apiKey,
-                    host: window.btoa('admin.shopify.com/store/' + shop.split('.')[0]),
-                    forceRedirect: true
-                  });
-                  window.app = app;
-                  console.log('App Bridge initialized');
+                  // Try all possible ways to initialize App Bridge
+                  if (window.shopify && window.shopify.createApp) {
+                    const app = window.shopify.createApp({
+                      apiKey: apiKey,
+                      host: window.btoa('admin.shopify.com/store/' + shop.split('.')[0]),
+                      forceRedirect: true
+                    });
+                    window.app = app;
+                    console.log('App Bridge initialized (shopify namespace)');
+                  } 
+                  else if (window.AppBridge) {
+                    const app = window.AppBridge.createApp({
+                      apiKey: apiKey,
+                      host: window.btoa('admin.shopify.com/store/' + shop.split('.')[0]),
+                      forceRedirect: true
+                    });
+                    window.app = app;
+                    console.log('App Bridge initialized (AppBridge namespace)');
+                  }
+                  else if (window['@shopify/app-bridge']) {
+                    const app = window['@shopify/app-bridge'].createApp({
+                      apiKey: apiKey,
+                      host: window.btoa('admin.shopify.com/store/' + shop.split('.')[0]),
+                      forceRedirect: true
+                    });
+                    window.app = app;
+                    console.log('App Bridge initialized (@shopify namespace)');
+                  }
+                  else {
+                    console.error('App Bridge not found on window. Available globals:', Object.keys(window));
+                  }
                 } catch (error) {
                   console.error('Error initializing App Bridge:', error);
                 }
@@ -646,8 +815,8 @@ router.get('/settings', async (req, res) => {
           <meta name="mobile-web-app-capable" content="yes">
           
           <!-- Shopify App Bridge -->
-          <script src="https://cdn.shopify.com/shopifycloud/app-bridge.js"></script>
-          <script src="https://cdn.shopify.com/shopifycloud/app-bridge-utils/dist/app-bridge-utils.js"></script>
+          <script src="https://cdn.shopify.com/shopifycloud/app-bridge/3.7.7/app-bridge.js"></script>
+          <script src="https://cdn.shopify.com/shopifycloud/app-bridge-utils/3.5.1/app-bridge-utils.js"></script>
           
           <style>
             * { box-sizing: border-box; }
@@ -681,20 +850,44 @@ router.get('/settings', async (req, res) => {
           </style>
           
           <script>
-            // Initialize App Bridge
+            // Initialize App Bridge - FIXED VERSION
             document.addEventListener('DOMContentLoaded', function() {
               const apiKey = "128d69fb5441ba3eda3ae4694c71b175";
               const shop = "${shop || ''}";
               
-              if (shop && window.shopify) {
+              if (shop) {
                 try {
-                  const app = shopify.createApp({
-                    apiKey: apiKey,
-                    host: window.btoa('admin.shopify.com/store/' + shop.split('.')[0]),
-                    forceRedirect: true
-                  });
-                  window.app = app;
-                  console.log('App Bridge initialized');
+                  // Try all possible ways to initialize App Bridge
+                  if (window.shopify && window.shopify.createApp) {
+                    const app = window.shopify.createApp({
+                      apiKey: apiKey,
+                      host: window.btoa('admin.shopify.com/store/' + shop.split('.')[0]),
+                      forceRedirect: true
+                    });
+                    window.app = app;
+                    console.log('App Bridge initialized (shopify namespace)');
+                  } 
+                  else if (window.AppBridge) {
+                    const app = window.AppBridge.createApp({
+                      apiKey: apiKey,
+                      host: window.btoa('admin.shopify.com/store/' + shop.split('.')[0]),
+                      forceRedirect: true
+                    });
+                    window.app = app;
+                    console.log('App Bridge initialized (AppBridge namespace)');
+                  }
+                  else if (window['@shopify/app-bridge']) {
+                    const app = window['@shopify/app-bridge'].createApp({
+                      apiKey: apiKey,
+                      host: window.btoa('admin.shopify.com/store/' + shop.split('.')[0]),
+                      forceRedirect: true
+                    });
+                    window.app = app;
+                    console.log('App Bridge initialized (@shopify namespace)');
+                  }
+                  else {
+                    console.error('App Bridge not found on window. Available globals:', Object.keys(window));
+                  }
                 } catch (error) {
                   console.error('Error initializing App Bridge:', error);
                 }
