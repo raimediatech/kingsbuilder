@@ -4,7 +4,15 @@ const cookieParser = require('cookie-parser');
 const app = express();
 
 // Load environment variables
-require('dotenv').config();
+try {
+  require('dotenv').config();
+  console.log('Environment variables loaded in API index');
+} catch (error) {
+  console.log('No .env file found in API index, using environment variables from the system');
+}
+
+// Import Shopify authentication middleware
+const { verifyShopifyHmac, verifyShopifyJWT } = require('./middleware/shopify-auth');
 
 // Configure CORS
 const corsOptions = {
@@ -21,6 +29,10 @@ const corsOptions = {
 app.use(cors(corsOptions));
 app.use(express.json());
 app.use(cookieParser(process.env.SESSION_SECRET || 'kings-builder-session-secret'));
+
+// Apply Shopify authentication middleware
+app.use(verifyShopifyHmac);
+app.use(verifyShopifyJWT);
 
 // Configure cookies
 app.use((req, res, next) => {
@@ -47,6 +59,52 @@ app.use((req, res, next) => {
   res.setHeader("Permissions-Policy", "accelerometer=(), camera=(), geolocation=(), gyroscope=(), magnetometer=(), microphone=(), payment=(), usb=()");
   
   next();
+});
+
+// Health check endpoint
+app.get('/api/health', (req, res) => {
+  res.json({
+    status: 'ok',
+    timestamp: new Date().toISOString(),
+    environment: process.env.NODE_ENV || 'development',
+    shopifyApiKey: process.env.SHOPIFY_API_KEY ? 'configured' : 'missing',
+    shopifyApiSecret: process.env.SHOPIFY_API_SECRET ? 'configured' : 'missing'
+  });
+});
+
+// Root route
+app.get('/', (req, res) => {
+  res.send(`
+    <html>
+      <head>
+        <title>KingsBuilder API</title>
+        <style>
+          body { font-family: Arial, sans-serif; max-width: 800px; margin: 0 auto; padding: 20px; }
+          h1 { color: #333; }
+          .card { background: #f9f9f9; border-radius: 8px; padding: 20px; margin-bottom: 20px; }
+          .success { color: green; }
+          .error { color: red; }
+        </style>
+      </head>
+      <body>
+        <h1>KingsBuilder API</h1>
+        <div class="card">
+          <h2>Status: <span class="success">Running</span></h2>
+          <p>The KingsBuilder API is running correctly.</p>
+          <p>Environment: ${process.env.NODE_ENV || 'development'}</p>
+          <p>Shopify API Key: ${process.env.SHOPIFY_API_KEY ? '<span class="success">Configured</span>' : '<span class="error">Missing</span>'}</p>
+          <p>Shopify API Secret: ${process.env.SHOPIFY_API_SECRET ? '<span class="success">Configured</span>' : '<span class="error">Missing</span>'}</p>
+        </div>
+        <div class="card">
+          <h2>Available Endpoints</h2>
+          <ul>
+            <li><a href="/api/health">/api/health</a> - Health check endpoint</li>
+            <li><a href="/api/pages">/api/pages</a> - Get all pages</li>
+          </ul>
+        </div>
+      </body>
+    </html>
+  `);
 });
 
 // API Routes
