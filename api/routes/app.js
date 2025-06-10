@@ -80,12 +80,12 @@ router.get('/analytics', async (req, res) => {
             // Initialize App Bridge
             document.addEventListener('DOMContentLoaded', function() {
               const apiKey = "128d69fb5441ba3eda3ae4694c71b175";
-              const shop = '${shop || ''}';
+              const shop = "${shop || ''}";
               
               if (shop) {
                 const config = {
                   apiKey: apiKey,
-                  host: window.btoa(`admin.shopify.com/store/\${shop.split('.')[0]}`),
+                  host: window.btoa("admin.shopify.com/store/" + shop.split('.')[0]),
                   forceRedirect: true
                 };
                 
@@ -212,13 +212,13 @@ router.get('/', async (req, res) => {
           
           <script>
             // Store shop info
-            window.shopOrigin = '${shop || ''}';
-            window.shopifyToken = '${accessToken || ''}';
+            window.shopOrigin = "${shop || ''}";
+            window.shopifyToken = "${accessToken || ''}";
             
             // Initialize Shopify App Bridge
             document.addEventListener('DOMContentLoaded', function() {
               const apiKey = "128d69fb5441ba3eda3ae4694c71b175";
-              const shop = '${shop || ''}';
+              const shop = "${shop || ''}";
               
               if (shop) {
                 const config = {
@@ -464,7 +464,7 @@ router.get('/pages', async (req, res) => {
             // Initialize App Bridge
             document.addEventListener('DOMContentLoaded', function() {
               const apiKey = "128d69fb5441ba3eda3ae4694c71b175";
-              const shop = '${shop || ''}';
+              const shop = "${shop || ''}";
               
               if (shop) {
                 const config = {
@@ -573,7 +573,7 @@ router.get('/templates', async (req, res) => {
             // Initialize App Bridge
             document.addEventListener('DOMContentLoaded', function() {
               const apiKey = "128d69fb5441ba3eda3ae4694c71b175";
-              const shop = '${shop || ''}';
+              const shop = "${shop || ''}";
               
               if (shop) {
                 const config = {
@@ -682,7 +682,7 @@ router.get('/settings', async (req, res) => {
             // Initialize App Bridge
             document.addEventListener('DOMContentLoaded', function() {
               const apiKey = "128d69fb5441ba3eda3ae4694c71b175";
-              const shop = '${shop || ''}';
+              const shop = "${shop || ''}";
               
               if (shop) {
                 const config = {
