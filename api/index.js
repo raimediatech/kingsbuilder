@@ -323,12 +323,14 @@ const builderRouter = require('./builder_simple');
 const pagesRouter = require('./routes/pages');
 const dashboardRouter = require('./routes/dashboard');
 const authRouter = require('./auth');
+const appRouter = require('./routes/app');
 
 // Use routers
 app.use('/api/auth', authRouter);
 app.use('/builder', builderRouter);
 app.use('/api/pages', pagesRouter);
 app.use('/dashboard', dashboardRouter);
+app.use('/app', appRouter);
 
 // Redirect root to install or dashboard
 app.get('/', (req, res) => {

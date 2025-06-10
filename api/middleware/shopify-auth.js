@@ -143,6 +143,16 @@ function verifyShopifyJWT(req, res, next) {
       }
     }
     
+    // Set proper headers for Shopify iframe embedding
+    // Use Content-Security-Policy instead of X-Frame-Options
+    res.setHeader(
+      "Content-Security-Policy",
+      "frame-ancestors https://*.myshopify.com https://*.shopify.com;"
+    );
+    
+    // Remove X-Frame-Options as it's deprecated and causing issues
+    res.removeHeader('X-Frame-Options');
+    
     console.log('Shopify JWT token processed');
     return next();
   } catch (error) {

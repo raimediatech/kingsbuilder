@@ -21,8 +21,8 @@ router.get('/', async (req, res) => {
       "frame-ancestors 'self' https://*.myshopify.com https://*.shopify.com; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.shopify.com;"
     );
     
-    // Allow scripts to run in iframe
-    res.setHeader("X-Frame-Options", "ALLOW-FROM https://*.myshopify.com https://*.shopify.com");
+    // Remove X-Frame-Options as it's deprecated and causing issues
+    res.removeHeader('X-Frame-Options');
     
     // Get pages from Shopify or database
     let pages = [];
@@ -60,7 +60,6 @@ router.get('/', async (req, res) => {
           <meta http-equiv="Content-Security-Policy" content="frame-ancestors 'self' https://*.myshopify.com https://*.shopify.com; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.shopify.com;">
           <meta name="apple-mobile-web-app-capable" content="yes">
           <meta name="mobile-web-app-capable" content="yes">
-          <meta http-equiv="X-Frame-Options" content="ALLOW-FROM https://*.myshopify.com https://*.shopify.com">
           
           <script>
             // Store shop info
