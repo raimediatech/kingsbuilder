@@ -43,17 +43,8 @@ router.get('/analytics', async (req, res) => {
           <meta name="mobile-web-app-capable" content="yes">
           
           <!-- Shopify App Bridge -->
-          <script src="https://unpkg.com/@shopify/app-bridge@3"></script>
-          <script src="https://unpkg.com/@shopify/app-bridge-utils@3"></script>
-          <script>
-            var actions = window.shopify?.actions || { 
-              Navigation: { create: () => {} },
-              NavigationMenu: { 
-                create: () => {},
-                Action: { UPDATE: 'UPDATE' }
-              }
-            };
-          </script>
+          <script src="https://cdn.shopify.com/shopifycloud/app-bridge.js"></script>
+          <script src="https://cdn.shopify.com/shopifycloud/app-bridge-utils/dist/app-bridge-utils.js"></script>
           
           <style>
             * { box-sizing: border-box; }
@@ -62,6 +53,27 @@ router.get('/analytics', async (req, res) => {
             .app-container { max-width: 1200px; margin: 0 auto; padding: 20px; }
             .app-title { margin: 0 0 20px 0; font-size: 24px; font-weight: 600; color: #111827; }
             .app-card { background: white; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); padding: 20px; }
+            
+            .section-tabs {
+              display: flex;
+              border-bottom: 1px solid #e5e7eb;
+              margin-bottom: 20px;
+            }
+            .tab {
+              padding: 12px 16px;
+              margin-right: 8px;
+              cursor: pointer;
+              font-weight: 500;
+              color: #6b7280;
+              border-bottom: 2px solid transparent;
+            }
+            .tab:hover {
+              color: #111827;
+            }
+            .tab.active {
+              color: #4f46e5;
+              border-bottom-color: #4f46e5;
+            }
           </style>
           
           <script>
@@ -79,55 +91,47 @@ router.get('/analytics', async (req, res) => {
                 
                 try {
                   const app = window.shopify.createApp(config);
+                  window.app = app;
                   
-                  // Set up app navigation for sidebar
-                  const menu = actions.NavigationMenu.create(app);
-                  menu.subscribe(actions.NavigationMenu.Action.UPDATE, (payload) => {
-                    console.log('NavigationMenu updated:', payload);
-                  });
-                  
-                  // Register the navigation items in the Shopify Admin sidebar
-                  menu.create({
-                    items: [
-                      {
-                        id: 'dashboard',
-                        destination: '/app',
-                        label: 'Dashboard'
-                      },
-                      {
-                        id: 'pages',
-                        destination: '/app/pages',
-                        label: 'Pages'
-                      },
-                      {
-                        id: 'templates',
-                        destination: '/app/templates',
-                        label: 'Templates'
-                      },
-                      {
-                        id: 'analytics',
-                        destination: '/app/analytics',
-                        label: 'Analytics',
-                        selected: true
-                      },
-                      {
-                        id: 'settings',
-                        destination: '/app/settings',
-                        label: 'Settings'
+                  // Add tabs navigation
+                  const tabs = document.querySelectorAll('.tab');
+                  tabs.forEach(tab => {
+                    tab.addEventListener('click', function() {
+                      const destination = this.getAttribute('data-dest');
+                      if (destination) {
+                        window.location.href = destination + '?shop=' + shop;
                       }
-                    ]
+                      
+                      // Update active tab
+                      tabs.forEach(t => t.classList.remove('active'));
+                      this.classList.add('active');
+                    });
                   });
+                  
+                  console.log('App Bridge initialized');
                 } catch (error) {
                   console.error('Error initializing App Bridge:', error);
                 }
+              } else {
+                console.warn('No shop origin found, cannot initialize App Bridge');
               }
             });
           </script>
         </head>
         <body>
           <div class="app-container">
-            <h1 class="app-title">Analytics</h1>
+            <h1 class="app-title">KingsBuilder</h1>
+            
+            <div class="section-tabs">
+              <div class="tab" data-dest="/app">Dashboard</div>
+              <div class="tab" data-dest="/app/pages">Pages</div>
+              <div class="tab" data-dest="/app/templates">Templates</div>
+              <div class="tab active" data-dest="/app/analytics">Analytics</div>
+              <div class="tab" data-dest="/app/settings">Settings</div>
+            </div>
+            
             <div class="app-card">
+              <h2 class="app-title">Analytics</h2>
               <p>View performance metrics and insights for your KingsBuilder pages.</p>
             </div>
           </div>
@@ -176,17 +180,8 @@ router.get('/', async (req, res) => {
           <meta name="mobile-web-app-capable" content="yes">
           
           <!-- Shopify App Bridge -->
-          <script src="https://unpkg.com/@shopify/app-bridge@3"></script>
-          <script src="https://unpkg.com/@shopify/app-bridge-utils@3"></script>
-          <script>
-            var actions = window.shopify?.actions || { 
-              Navigation: { create: () => {} },
-              NavigationMenu: { 
-                create: () => {},
-                Action: { UPDATE: 'UPDATE' }
-              }
-            };
-          </script>
+          <script src="https://cdn.shopify.com/shopifycloud/app-bridge.js"></script>
+          <script src="https://cdn.shopify.com/shopifycloud/app-bridge-utils/dist/app-bridge-utils.js"></script>
           
           <style>
             * { box-sizing: border-box; }
@@ -208,6 +203,27 @@ router.get('/', async (req, res) => {
             .loading { display: flex; justify-content: center; align-items: center; height: 100px; }
             .loading-spinner { border: 4px solid #f3f3f3; border-top: 4px solid #6366f1; border-radius: 50%; width: 30px; height: 30px; animation: spin 1s linear infinite; }
             @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+            
+            .section-tabs {
+              display: flex;
+              border-bottom: 1px solid #e5e7eb;
+              margin-bottom: 20px;
+            }
+            .tab {
+              padding: 12px 16px;
+              margin-right: 8px;
+              cursor: pointer;
+              font-weight: 500;
+              color: #6b7280;
+              border-bottom: 2px solid transparent;
+            }
+            .tab:hover {
+              color: #111827;
+            }
+            .tab.active {
+              color: #4f46e5;
+              border-bottom-color: #4f46e5;
+            }
           </style>
           
           <script>
@@ -229,46 +245,24 @@ router.get('/', async (req, res) => {
                 
                 try {
                   const app = window.shopify.createApp(config);
+                  window.app = app;
                   
-                  // Set up app navigation for sidebar
-                  const menu = actions.NavigationMenu.create(app);
-                  menu.subscribe(actions.NavigationMenu.Action.UPDATE, (payload) => {
-                    console.log('NavigationMenu updated:', payload);
-                  });
-                  
-                  // Register the navigation items in the Shopify Admin sidebar
-                  menu.create({
-                    items: [
-                      {
-                        id: 'dashboard',
-                        destination: '/app',
-                        label: 'Dashboard',
-                        selected: true
-                      },
-                      {
-                        id: 'pages',
-                        destination: '/app/pages',
-                        label: 'Pages'
-                      },
-                      {
-                        id: 'templates',
-                        destination: '/app/templates',
-                        label: 'Templates'
-                      },
-                      {
-                        id: 'analytics',
-                        destination: '/app/analytics',
-                        label: 'Analytics'
-                      },
-                      {
-                        id: 'settings',
-                        destination: '/app/settings',
-                        label: 'Settings'
+                  // Add tabs navigation
+                  const tabs = document.querySelectorAll('.tab');
+                  tabs.forEach(tab => {
+                    tab.addEventListener('click', function() {
+                      const destination = this.getAttribute('data-dest');
+                      if (destination) {
+                        window.location.href = destination + '?shop=' + shop;
                       }
-                    ]
+                      
+                      // Update active tab
+                      tabs.forEach(t => t.classList.remove('active'));
+                      this.classList.add('active');
+                    });
                   });
                   
-                  console.log('App Bridge initialized with navigation');
+                  console.log('App Bridge initialized');
                 } catch (error) {
                   console.error('Error initializing App Bridge:', error);
                 }
@@ -372,6 +366,14 @@ router.get('/', async (req, res) => {
               </div>
             </div>
             
+            <div class="section-tabs">
+              <div class="tab active" data-dest="/app">Dashboard</div>
+              <div class="tab" data-dest="/app/pages">Pages</div>
+              <div class="tab" data-dest="/app/templates">Templates</div>
+              <div class="tab" data-dest="/app/analytics">Analytics</div>
+              <div class="tab" data-dest="/app/settings">Settings</div>
+            </div>
+            
             <div class="app-card">
               <h2 class="card-title">Welcome to KingsBuilder</h2>
               <p>Build beautiful custom pages for your Shopify store without coding. Create, edit, and publish pages with our easy-to-use drag-and-drop builder.</p>
@@ -417,17 +419,8 @@ router.get('/pages', async (req, res) => {
           <meta name="mobile-web-app-capable" content="yes">
           
           <!-- Shopify App Bridge -->
-          <script src="https://unpkg.com/@shopify/app-bridge@3"></script>
-          <script src="https://unpkg.com/@shopify/app-bridge-utils@3"></script>
-          <script>
-            var actions = window.shopify?.actions || { 
-              Navigation: { create: () => {} },
-              NavigationMenu: { 
-                create: () => {},
-                Action: { UPDATE: 'UPDATE' }
-              }
-            };
-          </script>
+          <script src="https://cdn.shopify.com/shopifycloud/app-bridge.js"></script>
+          <script src="https://cdn.shopify.com/shopifycloud/app-bridge-utils/dist/app-bridge-utils.js"></script>
           
           <style>
             * { box-sizing: border-box; }
@@ -436,6 +429,27 @@ router.get('/pages', async (req, res) => {
             .app-container { max-width: 1200px; margin: 0 auto; padding: 20px; }
             .app-title { margin: 0 0 20px 0; font-size: 24px; font-weight: 600; color: #111827; }
             .app-card { background: white; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); padding: 20px; }
+            
+            .section-tabs {
+              display: flex;
+              border-bottom: 1px solid #e5e7eb;
+              margin-bottom: 20px;
+            }
+            .tab {
+              padding: 12px 16px;
+              margin-right: 8px;
+              cursor: pointer;
+              font-weight: 500;
+              color: #6b7280;
+              border-bottom: 2px solid transparent;
+            }
+            .tab:hover {
+              color: #111827;
+            }
+            .tab.active {
+              color: #4f46e5;
+              border-bottom-color: #4f46e5;
+            }
           </style>
           
           <script>
@@ -453,44 +467,24 @@ router.get('/pages', async (req, res) => {
                 
                 try {
                   const app = window.shopify.createApp(config);
+                  window.app = app;
                   
-                  // Set up app navigation for sidebar
-                  const menu = actions.NavigationMenu.create(app);
-                  menu.subscribe(actions.NavigationMenu.Action.UPDATE, (payload) => {
-                    console.log('NavigationMenu updated:', payload);
-                  });
-                  
-                  // Register the navigation items in the Shopify Admin sidebar
-                  menu.create({
-                    items: [
-                      {
-                        id: 'dashboard',
-                        destination: '/app',
-                        label: 'Dashboard'
-                      },
-                      {
-                        id: 'pages',
-                        destination: '/app/pages',
-                        label: 'Pages',
-                        selected: true
-                      },
-                      {
-                        id: 'templates',
-                        destination: '/app/templates',
-                        label: 'Templates'
-                      },
-                      {
-                        id: 'analytics',
-                        destination: '/app/analytics',
-                        label: 'Analytics'
-                      },
-                      {
-                        id: 'settings',
-                        destination: '/app/settings',
-                        label: 'Settings'
+                  // Add tabs navigation
+                  const tabs = document.querySelectorAll('.tab');
+                  tabs.forEach(tab => {
+                    tab.addEventListener('click', function() {
+                      const destination = this.getAttribute('data-dest');
+                      if (destination) {
+                        window.location.href = destination + '?shop=' + shop;
                       }
-                    ]
+                      
+                      // Update active tab
+                      tabs.forEach(t => t.classList.remove('active'));
+                      this.classList.add('active');
+                    });
                   });
+                  
+                  console.log('App Bridge initialized');
                 } catch (error) {
                   console.error('Error initializing App Bridge:', error);
                 }
@@ -500,8 +494,18 @@ router.get('/pages', async (req, res) => {
         </head>
         <body>
           <div class="app-container">
-            <h1 class="app-title">Pages</h1>
+            <h1 class="app-title">KingsBuilder</h1>
+            
+            <div class="section-tabs">
+              <div class="tab" data-dest="/app">Dashboard</div>
+              <div class="tab active" data-dest="/app/pages">Pages</div>
+              <div class="tab" data-dest="/app/templates">Templates</div>
+              <div class="tab" data-dest="/app/analytics">Analytics</div>
+              <div class="tab" data-dest="/app/settings">Settings</div>
+            </div>
+            
             <div class="app-card">
+              <h2 class="app-title">Pages</h2>
               <p>Manage your custom pages here. This section will show all the pages you've created with KingsBuilder.</p>
             </div>
           </div>
@@ -540,17 +544,8 @@ router.get('/templates', async (req, res) => {
           <meta name="mobile-web-app-capable" content="yes">
           
           <!-- Shopify App Bridge -->
-          <script src="https://unpkg.com/@shopify/app-bridge@3"></script>
-          <script src="https://unpkg.com/@shopify/app-bridge-utils@3"></script>
-          <script>
-            var actions = window.shopify?.actions || { 
-              Navigation: { create: () => {} },
-              NavigationMenu: { 
-                create: () => {},
-                Action: { UPDATE: 'UPDATE' }
-              }
-            };
-          </script>
+          <script src="https://cdn.shopify.com/shopifycloud/app-bridge.js"></script>
+          <script src="https://cdn.shopify.com/shopifycloud/app-bridge-utils/dist/app-bridge-utils.js"></script>
           
           <style>
             * { box-sizing: border-box; }
@@ -559,6 +554,27 @@ router.get('/templates', async (req, res) => {
             .app-container { max-width: 1200px; margin: 0 auto; padding: 20px; }
             .app-title { margin: 0 0 20px 0; font-size: 24px; font-weight: 600; color: #111827; }
             .app-card { background: white; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); padding: 20px; }
+            
+            .section-tabs {
+              display: flex;
+              border-bottom: 1px solid #e5e7eb;
+              margin-bottom: 20px;
+            }
+            .tab {
+              padding: 12px 16px;
+              margin-right: 8px;
+              cursor: pointer;
+              font-weight: 500;
+              color: #6b7280;
+              border-bottom: 2px solid transparent;
+            }
+            .tab:hover {
+              color: #111827;
+            }
+            .tab.active {
+              color: #4f46e5;
+              border-bottom-color: #4f46e5;
+            }
           </style>
           
           <script>
@@ -576,44 +592,24 @@ router.get('/templates', async (req, res) => {
                 
                 try {
                   const app = window.shopify.createApp(config);
+                  window.app = app;
                   
-                  // Set up app navigation for sidebar
-                  const menu = actions.NavigationMenu.create(app);
-                  menu.subscribe(actions.NavigationMenu.Action.UPDATE, (payload) => {
-                    console.log('NavigationMenu updated:', payload);
-                  });
-                  
-                  // Register the navigation items in the Shopify Admin sidebar
-                  menu.create({
-                    items: [
-                      {
-                        id: 'dashboard',
-                        destination: '/app',
-                        label: 'Dashboard'
-                      },
-                      {
-                        id: 'pages',
-                        destination: '/app/pages',
-                        label: 'Pages'
-                      },
-                      {
-                        id: 'templates',
-                        destination: '/app/templates',
-                        label: 'Templates',
-                        selected: true
-                      },
-                      {
-                        id: 'analytics',
-                        destination: '/app/analytics',
-                        label: 'Analytics'
-                      },
-                      {
-                        id: 'settings',
-                        destination: '/app/settings',
-                        label: 'Settings'
+                  // Add tabs navigation
+                  const tabs = document.querySelectorAll('.tab');
+                  tabs.forEach(tab => {
+                    tab.addEventListener('click', function() {
+                      const destination = this.getAttribute('data-dest');
+                      if (destination) {
+                        window.location.href = destination + '?shop=' + shop;
                       }
-                    ]
+                      
+                      // Update active tab
+                      tabs.forEach(t => t.classList.remove('active'));
+                      this.classList.add('active');
+                    });
                   });
+                  
+                  console.log('App Bridge initialized');
                 } catch (error) {
                   console.error('Error initializing App Bridge:', error);
                 }
@@ -623,8 +619,18 @@ router.get('/templates', async (req, res) => {
         </head>
         <body>
           <div class="app-container">
-            <h1 class="app-title">Templates</h1>
+            <h1 class="app-title">KingsBuilder</h1>
+            
+            <div class="section-tabs">
+              <div class="tab" data-dest="/app">Dashboard</div>
+              <div class="tab" data-dest="/app/pages">Pages</div>
+              <div class="tab active" data-dest="/app/templates">Templates</div>
+              <div class="tab" data-dest="/app/analytics">Analytics</div>
+              <div class="tab" data-dest="/app/settings">Settings</div>
+            </div>
+            
             <div class="app-card">
+              <h2 class="app-title">Templates</h2>
               <p>Browse and select from pre-designed templates to quickly create beautiful pages.</p>
             </div>
           </div>
@@ -663,17 +669,8 @@ router.get('/settings', async (req, res) => {
           <meta name="mobile-web-app-capable" content="yes">
           
           <!-- Shopify App Bridge -->
-          <script src="https://unpkg.com/@shopify/app-bridge@3"></script>
-          <script src="https://unpkg.com/@shopify/app-bridge-utils@3"></script>
-          <script>
-            var actions = window.shopify?.actions || { 
-              Navigation: { create: () => {} },
-              NavigationMenu: { 
-                create: () => {},
-                Action: { UPDATE: 'UPDATE' }
-              }
-            };
-          </script>
+          <script src="https://cdn.shopify.com/shopifycloud/app-bridge.js"></script>
+          <script src="https://cdn.shopify.com/shopifycloud/app-bridge-utils/dist/app-bridge-utils.js"></script>
           
           <style>
             * { box-sizing: border-box; }
@@ -682,6 +679,27 @@ router.get('/settings', async (req, res) => {
             .app-container { max-width: 1200px; margin: 0 auto; padding: 20px; }
             .app-title { margin: 0 0 20px 0; font-size: 24px; font-weight: 600; color: #111827; }
             .app-card { background: white; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); padding: 20px; }
+            
+            .section-tabs {
+              display: flex;
+              border-bottom: 1px solid #e5e7eb;
+              margin-bottom: 20px;
+            }
+            .tab {
+              padding: 12px 16px;
+              margin-right: 8px;
+              cursor: pointer;
+              font-weight: 500;
+              color: #6b7280;
+              border-bottom: 2px solid transparent;
+            }
+            .tab:hover {
+              color: #111827;
+            }
+            .tab.active {
+              color: #4f46e5;
+              border-bottom-color: #4f46e5;
+            }
           </style>
           
           <script>
@@ -699,44 +717,24 @@ router.get('/settings', async (req, res) => {
                 
                 try {
                   const app = window.shopify.createApp(config);
+                  window.app = app;
                   
-                  // Set up app navigation for sidebar
-                  const menu = actions.NavigationMenu.create(app);
-                  menu.subscribe(actions.NavigationMenu.Action.UPDATE, (payload) => {
-                    console.log('NavigationMenu updated:', payload);
-                  });
-                  
-                  // Register the navigation items in the Shopify Admin sidebar
-                  menu.create({
-                    items: [
-                      {
-                        id: 'dashboard',
-                        destination: '/app',
-                        label: 'Dashboard'
-                      },
-                      {
-                        id: 'pages',
-                        destination: '/app/pages',
-                        label: 'Pages'
-                      },
-                      {
-                        id: 'templates',
-                        destination: '/app/templates',
-                        label: 'Templates'
-                      },
-                      {
-                        id: 'analytics',
-                        destination: '/app/analytics',
-                        label: 'Analytics'
-                      },
-                      {
-                        id: 'settings',
-                        destination: '/app/settings',
-                        label: 'Settings',
-                        selected: true
+                  // Add tabs navigation
+                  const tabs = document.querySelectorAll('.tab');
+                  tabs.forEach(tab => {
+                    tab.addEventListener('click', function() {
+                      const destination = this.getAttribute('data-dest');
+                      if (destination) {
+                        window.location.href = destination + '?shop=' + shop;
                       }
-                    ]
+                      
+                      // Update active tab
+                      tabs.forEach(t => t.classList.remove('active'));
+                      this.classList.add('active');
+                    });
                   });
+                  
+                  console.log('App Bridge initialized');
                 } catch (error) {
                   console.error('Error initializing App Bridge:', error);
                 }
@@ -746,8 +744,18 @@ router.get('/settings', async (req, res) => {
         </head>
         <body>
           <div class="app-container">
-            <h1 class="app-title">Settings</h1>
+            <h1 class="app-title">KingsBuilder</h1>
+            
+            <div class="section-tabs">
+              <div class="tab" data-dest="/app">Dashboard</div>
+              <div class="tab" data-dest="/app/pages">Pages</div>
+              <div class="tab" data-dest="/app/templates">Templates</div>
+              <div class="tab" data-dest="/app/analytics">Analytics</div>
+              <div class="tab active" data-dest="/app/settings">Settings</div>
+            </div>
+            
             <div class="app-card">
+              <h2 class="app-title">Settings</h2>
               <p>Configure your KingsBuilder settings and preferences here.</p>
             </div>
           </div>
