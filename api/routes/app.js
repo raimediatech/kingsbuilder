@@ -17,6 +17,321 @@ router.get('/debug', (req, res) => {
 // Apply Shopify JWT verification middleware
 router.use(verifyShopifyJWT);
 
+// Pages route
+router.get('/pages', async (req, res) => {
+  try {
+    // Get shop from various possible sources
+    const shop = req.query.shop || req.shopifyShop || req.headers['x-shopify-shop-domain'] || req.cookies?.shopOrigin;
+    
+    // Set security headers for Shopify iframe embedding
+    res.setHeader(
+      "Content-Security-Policy",
+      "frame-ancestors https://*.myshopify.com https://*.shopify.com; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.shopify.com https://unpkg.com;"
+    );
+    
+    // Modern way to allow embedding in iframes
+    res.removeHeader('X-Frame-Options');
+    
+    res.send(`
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <title>KingsBuilder - Pages</title>
+          <meta name="viewport" content="width=device-width, initial-scale=1.0">
+          <meta http-equiv="Content-Security-Policy" content="frame-ancestors https://*.myshopify.com https://*.shopify.com; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.shopify.com https://unpkg.com;">
+          <meta name="apple-mobile-web-app-capable" content="yes">
+          <meta name="mobile-web-app-capable" content="yes">
+          
+          <!-- Shopify App Bridge -->
+          <script src="https://unpkg.com/@shopify/app-bridge@3"></script>
+          <script src="https://unpkg.com/@shopify/app-bridge-utils@3"></script>
+          <script>
+            var actions = window.shopify?.actions || { Navigation: { create: () => {} } };
+          </script>
+          
+          <style>
+            * { box-sizing: border-box; }
+            body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; margin: 0; padding: 0; background: #f6f6f7; }
+            
+            .app-container { max-width: 1200px; margin: 0 auto; padding: 20px; }
+            .app-title { margin: 0 0 20px 0; font-size: 24px; font-weight: 600; color: #111827; }
+            .app-card { background: white; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); padding: 20px; }
+          </style>
+          
+          <script>
+            // Initialize App Bridge
+            document.addEventListener('DOMContentLoaded', function() {
+              const apiKey = "128d69fb5441ba3eda3ae4694c71b175";
+              const shop = "${shop || ''}";
+              
+              if (shop) {
+                const config = {
+                  apiKey: apiKey,
+                  host: window.btoa(`admin.shopify.com/store/${shop.split('.')[0]}`),
+                  forceRedirect: true
+                };
+                
+                try {
+                  const app = window.shopify.createApp(config);
+                  
+                  // Set up app navigation
+                  const nav = actions.Navigation.create(app);
+                  
+                  // Create the navigation structure
+                  nav.set({
+                    items: [
+                      {
+                        destination: '/app',
+                        label: 'Dashboard'
+                      },
+                      {
+                        destination: '/app/pages',
+                        label: 'Pages',
+                        selected: true
+                      },
+                      {
+                        destination: '/app/templates',
+                        label: 'Templates'
+                      },
+                      {
+                        destination: '/app/settings',
+                        label: 'Settings'
+                      }
+                    ]
+                  });
+                } catch (error) {
+                  console.error('Error initializing App Bridge:', error);
+                }
+              }
+            });
+          </script>
+        </head>
+        <body>
+          <div class="app-container">
+            <h1 class="app-title">Pages</h1>
+            <div class="app-card">
+              <p>Manage your custom pages here. This section will show all the pages you've created with KingsBuilder.</p>
+            </div>
+          </div>
+        </body>
+      </html>
+    `);
+  } catch (error) {
+    console.error('Error in pages route:', error);
+    res.status(500).send('An error occurred. Please try again.');
+  }
+});
+
+// Templates route
+router.get('/templates', async (req, res) => {
+  try {
+    // Get shop from various possible sources
+    const shop = req.query.shop || req.shopifyShop || req.headers['x-shopify-shop-domain'] || req.cookies?.shopOrigin;
+    
+    // Set security headers for Shopify iframe embedding
+    res.setHeader(
+      "Content-Security-Policy",
+      "frame-ancestors https://*.myshopify.com https://*.shopify.com; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.shopify.com https://unpkg.com;"
+    );
+    
+    // Modern way to allow embedding in iframes
+    res.removeHeader('X-Frame-Options');
+    
+    res.send(`
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <title>KingsBuilder - Templates</title>
+          <meta name="viewport" content="width=device-width, initial-scale=1.0">
+          <meta http-equiv="Content-Security-Policy" content="frame-ancestors https://*.myshopify.com https://*.shopify.com; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.shopify.com https://unpkg.com;">
+          <meta name="apple-mobile-web-app-capable" content="yes">
+          <meta name="mobile-web-app-capable" content="yes">
+          
+          <!-- Shopify App Bridge -->
+          <script src="https://unpkg.com/@shopify/app-bridge@3"></script>
+          <script src="https://unpkg.com/@shopify/app-bridge-utils@3"></script>
+          <script>
+            var actions = window.shopify?.actions || { Navigation: { create: () => {} } };
+          </script>
+          
+          <style>
+            * { box-sizing: border-box; }
+            body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; margin: 0; padding: 0; background: #f6f6f7; }
+            
+            .app-container { max-width: 1200px; margin: 0 auto; padding: 20px; }
+            .app-title { margin: 0 0 20px 0; font-size: 24px; font-weight: 600; color: #111827; }
+            .app-card { background: white; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); padding: 20px; }
+          </style>
+          
+          <script>
+            // Initialize App Bridge
+            document.addEventListener('DOMContentLoaded', function() {
+              const apiKey = "128d69fb5441ba3eda3ae4694c71b175";
+              const shop = "${shop || ''}";
+              
+              if (shop) {
+                const config = {
+                  apiKey: apiKey,
+                  host: window.btoa(`admin.shopify.com/store/${shop.split('.')[0]}`),
+                  forceRedirect: true
+                };
+                
+                try {
+                  const app = window.shopify.createApp(config);
+                  
+                  // Set up app navigation
+                  const nav = actions.Navigation.create(app);
+                  
+                  // Create the navigation structure
+                  nav.set({
+                    items: [
+                      {
+                        destination: '/app',
+                        label: 'Dashboard'
+                      },
+                      {
+                        destination: '/app/pages',
+                        label: 'Pages'
+                      },
+                      {
+                        destination: '/app/templates',
+                        label: 'Templates',
+                        selected: true
+                      },
+                      {
+                        destination: '/app/settings',
+                        label: 'Settings'
+                      }
+                    ]
+                  });
+                } catch (error) {
+                  console.error('Error initializing App Bridge:', error);
+                }
+              }
+            });
+          </script>
+        </head>
+        <body>
+          <div class="app-container">
+            <h1 class="app-title">Templates</h1>
+            <div class="app-card">
+              <p>Browse and select from pre-designed templates to quickly create beautiful pages.</p>
+            </div>
+          </div>
+        </body>
+      </html>
+    `);
+  } catch (error) {
+    console.error('Error in templates route:', error);
+    res.status(500).send('An error occurred. Please try again.');
+  }
+});
+
+// Settings route
+router.get('/settings', async (req, res) => {
+  try {
+    // Get shop from various possible sources
+    const shop = req.query.shop || req.shopifyShop || req.headers['x-shopify-shop-domain'] || req.cookies?.shopOrigin;
+    
+    // Set security headers for Shopify iframe embedding
+    res.setHeader(
+      "Content-Security-Policy",
+      "frame-ancestors https://*.myshopify.com https://*.shopify.com; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.shopify.com https://unpkg.com;"
+    );
+    
+    // Modern way to allow embedding in iframes
+    res.removeHeader('X-Frame-Options');
+    
+    res.send(`
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <title>KingsBuilder - Settings</title>
+          <meta name="viewport" content="width=device-width, initial-scale=1.0">
+          <meta http-equiv="Content-Security-Policy" content="frame-ancestors https://*.myshopify.com https://*.shopify.com; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.shopify.com https://unpkg.com;">
+          <meta name="apple-mobile-web-app-capable" content="yes">
+          <meta name="mobile-web-app-capable" content="yes">
+          
+          <!-- Shopify App Bridge -->
+          <script src="https://unpkg.com/@shopify/app-bridge@3"></script>
+          <script src="https://unpkg.com/@shopify/app-bridge-utils@3"></script>
+          <script>
+            var actions = window.shopify?.actions || { Navigation: { create: () => {} } };
+          </script>
+          
+          <style>
+            * { box-sizing: border-box; }
+            body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; margin: 0; padding: 0; background: #f6f6f7; }
+            
+            .app-container { max-width: 1200px; margin: 0 auto; padding: 20px; }
+            .app-title { margin: 0 0 20px 0; font-size: 24px; font-weight: 600; color: #111827; }
+            .app-card { background: white; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); padding: 20px; }
+          </style>
+          
+          <script>
+            // Initialize App Bridge
+            document.addEventListener('DOMContentLoaded', function() {
+              const apiKey = "128d69fb5441ba3eda3ae4694c71b175";
+              const shop = "${shop || ''}";
+              
+              if (shop) {
+                const config = {
+                  apiKey: apiKey,
+                  host: window.btoa(`admin.shopify.com/store/${shop.split('.')[0]}`),
+                  forceRedirect: true
+                };
+                
+                try {
+                  const app = window.shopify.createApp(config);
+                  
+                  // Set up app navigation
+                  const nav = actions.Navigation.create(app);
+                  
+                  // Create the navigation structure
+                  nav.set({
+                    items: [
+                      {
+                        destination: '/app',
+                        label: 'Dashboard'
+                      },
+                      {
+                        destination: '/app/pages',
+                        label: 'Pages'
+                      },
+                      {
+                        destination: '/app/templates',
+                        label: 'Templates'
+                      },
+                      {
+                        destination: '/app/settings',
+                        label: 'Settings',
+                        selected: true
+                      }
+                    ]
+                  });
+                } catch (error) {
+                  console.error('Error initializing App Bridge:', error);
+                }
+              }
+            });
+          </script>
+        </head>
+        <body>
+          <div class="app-container">
+            <h1 class="app-title">Settings</h1>
+            <div class="app-card">
+              <p>Configure your KingsBuilder settings and preferences here.</p>
+            </div>
+          </div>
+        </body>
+      </html>
+    `);
+  } catch (error) {
+    console.error('Error in settings route:', error);
+    res.status(500).send('An error occurred. Please try again.');
+  }
+});
+
 // Main app route - handles the embedded app view
 router.get('/', async (req, res) => {
   try {
@@ -48,9 +363,16 @@ router.get('/', async (req, res) => {
         <head>
           <title>KingsBuilder</title>
           <meta name="viewport" content="width=device-width, initial-scale=1.0">
-          <meta http-equiv="Content-Security-Policy" content="frame-ancestors https://*.myshopify.com https://*.shopify.com; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.shopify.com;">
+          <meta http-equiv="Content-Security-Policy" content="frame-ancestors https://*.myshopify.com https://*.shopify.com; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.shopify.com https://unpkg.com;">
           <meta name="apple-mobile-web-app-capable" content="yes">
           <meta name="mobile-web-app-capable" content="yes">
+          
+          <!-- Shopify App Bridge -->
+          <script src="https://unpkg.com/@shopify/app-bridge@3"></script>
+          <script src="https://unpkg.com/@shopify/app-bridge-utils@3"></script>
+          <script>
+            var actions = window.shopify?.actions || { Navigation: { create: () => {} } };
+          </script>
           
           <style>
             * { box-sizing: border-box; }
@@ -78,6 +400,56 @@ router.get('/', async (req, res) => {
             // Store shop info
             window.shopOrigin = "${shop || ''}";
             window.shopifyToken = "${accessToken || ''}";
+            
+            // Initialize Shopify App Bridge
+            document.addEventListener('DOMContentLoaded', function() {
+              const apiKey = "128d69fb5441ba3eda3ae4694c71b175";
+              const shop = "${shop || ''}";
+              
+              if (shop) {
+                const config = {
+                  apiKey: apiKey,
+                  host: window.btoa(`admin.shopify.com/store/${shop.split('.')[0]}`),
+                  forceRedirect: true
+                };
+                
+                try {
+                  const app = window.shopify.createApp(config);
+                  
+                  // Set up app navigation
+                  const nav = actions.Navigation.create(app);
+                  
+                  // Create the navigation structure
+                  nav.set({
+                    items: [
+                      {
+                        destination: '/app',
+                        label: 'Dashboard',
+                        selected: true
+                      },
+                      {
+                        destination: '/app/pages',
+                        label: 'Pages'
+                      },
+                      {
+                        destination: '/app/templates',
+                        label: 'Templates'
+                      },
+                      {
+                        destination: '/app/settings',
+                        label: 'Settings'
+                      }
+                    ]
+                  });
+                  
+                  console.log('App Bridge initialized with navigation');
+                } catch (error) {
+                  console.error('Error initializing App Bridge:', error);
+                }
+              } else {
+                console.warn('No shop origin found, cannot initialize App Bridge');
+              }
+            });
             
             // Function to navigate to dashboard
             function goToDashboard() {
