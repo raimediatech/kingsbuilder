@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   Page,
   Layout,
@@ -15,6 +15,7 @@ import {
   EmptyState,
   Toast,
   Frame,
+  Banner
 } from "@shopify/polaris";
 import { TitleBar } from "@shopify/app-bridge-react";
 import PageBuilder from "../components/PageBuilder";
@@ -38,6 +39,31 @@ export default function Builder() {
   const [showToast, setShowToast] = useState(false);
   const [toastMessage, setToastMessage] = useState("");
   const [toastError, setToastError] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState(null);
+
+  // Fetch pages from API
+  useEffect(() => {
+    const fetchPages = async () => {
+      try {
+        setIsLoading(true);
+        // In a real app, you would fetch from your API
+        // const response = await fetch('/api/pages?shop=your-shop.myshopify.com');
+        // const data = await response.json();
+        // setPages(data);
+        
+        // Using mock data for now
+        setPages(MOCK_PAGES);
+        setIsLoading(false);
+      } catch (err) {
+        console.error('Error fetching pages:', err);
+        setError('Failed to load pages. Please try again.');
+        setIsLoading(false);
+      }
+    };
+
+    fetchPages();
+  }, []);
 
   const handleCreatePage = () => {
     setTitle("");
@@ -63,139 +89,132 @@ export default function Builder() {
     setIsBuilderMode(true);
   };
 
-  const handleSavePage = () => {
-    if (selectedPage) {
-      // Update existing page
+  const handleSavePage = async () => {
+    try {
+      setIsLoading(true);
+      
+      if (selectedPage) {
+        // Update existing page
+        // In a real app, you would call your API
+        // await fetch(`/api/pages/${handle}?shop=your-shop.myshopify.com`, {
+        //   method: 'PUT',
+        //   headers: { 'Content-Type': 'application/json' },
+        //   body: JSON.stringify({ title, content, handle })
+        // });
+        
+        const updatedPages = pages.map(p => 
+          p.id === selectedPage.id 
+            ? { ...p, title, body: content, handle } 
+            : p
+        );
+        setPages(updatedPages);
+      } else {
+        // Create new page
+        // In a real app, you would call your API
+        // await fetch('/api/pages?shop=your-shop.myshopify.com', {
+        //   method: 'POST',
+        //   headers: { 'Content-Type': 'application/json' },
+        //   body: JSON.stringify({ title, content, handle })
+        // });
+        
+        const newPage = {
+          id: String(Date.now()),
+          title,
+          body: content,
+          handle,
+          url: `#${handle}`,
+        };
+        setPages([...pages, newPage]);
+      }
+      
+      setToastMessage(`Page "${title}" has been ${selectedPage ? "updated" : "created"} successfully.`);
+      setToastError(false);
+      setShowToast(true);
+      setIsCreating(false);
+      setIsEditing(false);
+      setIsLoading(false);
+    } catch (err) {
+      console.error('Error saving page:', err);
+      setToastMessage('Failed to save page. Please try again.');
+      setToastError(true);
+      setShowToast(true);
+      setIsLoading(false);
+    }
+  };
+
+  const handleSaveBuilderPage = async (pageData) => {
+    try {
+      setIsLoading(true);
+      
+      // In a real app, you would call your API
+      // await fetch(`/api/pages/${selectedPage.handle}?shop=your-shop.myshopify.com`, {
+      //   method: 'PUT',
+      //   headers: { 'Content-Type': 'application/json' },
+      //   body: JSON.stringify({ pageBuilderData: pageData })
+      // });
+      
+      // Update local state
       const updatedPages = pages.map(p => 
         p.id === selectedPage.id 
-          ? { ...p, title, body: content, handle } 
+          ? { ...p, pageBuilderData: pageData } 
           : p
       );
       setPages(updatedPages);
-    } else {
-      // Create new page
-      const newPage = {
-        id: String(Date.now()),
-        title,
-        body: content,
-        handle,
-        url: `#${handle}`,
-      };
-      setPages([...pages, newPage]);
-    }
-    
-    setToastMessage(`Page "${title}" has been ${selectedPage ? "updated" : "created"} successfully.`);
-    setToastError(false);
-    setShowToast(true);
-    setIsCreating(false);
-    setIsEditing(false);
-  };
-
-  const handleSaveBuilderPage = (pageData) => {
-    // In a real app, you would convert pageData to HTML
-    const updatedPages = pages.map(p => 
-      p.id === selectedPage.id 
-        ? { ...p, pageBuilderData: pageData } 
-        : p
-    );
-    setPages(updatedPages);
-    
-    setToastMessage(`Page "${selectedPage.title}" has been updated successfully.`);
-    setToastError(false);
-    setShowToast(true);
-    setIsBuilderMode(false);
-  };
-
-  const handleDeletePage = (page) => {
-    if (confirm(`Are you sure you want to delete "${page.title}"?`)) {
-      const updatedPages = pages.filter(p => p.id !== page.id);
-      setPages(updatedPages);
       
-      setToastMessage("Page has been deleted successfully.");
+      setToastMessage(`Page "${selectedPage.title}" has been updated successfully.`);
       setToastError(false);
       setShowToast(true);
-    }
-  };
-
-  const handleCreatePage = () => {
-    setTitle("");
-    setHandle("");
-    setContent("");
-    setSelectedPage(null);
-    setIsCreating(true);
-  };
-
-  const handleEditPage = (page) => {
-    setSelectedPage(page);
-    setTitle(page.title);
-    setContent(page.body);
-    setHandle(page.handle);
-    setIsEditing(true);
-  };
-
-  const handleOpenPageBuilder = (page) => {
-    setSelectedPage(page);
-    setTitle(page.title);
-    setContent(page.body);
-    setHandle(page.handle);
-    setIsBuilderMode(true);
-  };
-
-  const handleSavePage = () => {
-    if (selectedPage) {
-      // Update existing page
-      const updatedPages = pages.map(p => 
-        p.id === selectedPage.id 
-          ? { ...p, title, body: content, handle } 
-          : p
-      );
-      setPages(updatedPages);
-    } else {
-      // Create new page
-      const newPage = {
-        id: String(Date.now()),
-        title,
-        body: content,
-        handle,
-        url: `#${handle}`,
-      };
-      setPages([...pages, newPage]);
-    }
-    
-    setToastMessage(`Page "${title}" has been ${selectedPage ? "updated" : "created"} successfully.`);
-    setToastError(false);
-    setShowToast(true);
-    setIsCreating(false);
-    setIsEditing(false);
-  };
-
-  const handleSaveBuilderPage = (pageData) => {
-    // In a real app, you would convert pageData to HTML
-    const updatedPages = pages.map(p => 
-      p.id === selectedPage.id 
-        ? { ...p, pageBuilderData: pageData } 
-        : p
-    );
-    setPages(updatedPages);
-    
-    setToastMessage(`Page "${selectedPage.title}" has been updated successfully.`);
-    setToastError(false);
-    setShowToast(true);
-    setIsBuilderMode(false);
-  };
-
-  const handleDeletePage = (page) => {
-    if (confirm(`Are you sure you want to delete "${page.title}"?`)) {
-      const updatedPages = pages.filter(p => p.id !== page.id);
-      setPages(updatedPages);
-      
-      setToastMessage("Page has been deleted successfully.");
-      setToastError(false);
+      setIsBuilderMode(false);
+      setIsLoading(false);
+    } catch (err) {
+      console.error('Error saving page:', err);
+      setToastMessage('Failed to save page. Please try again.');
+      setToastError(true);
       setShowToast(true);
+      setIsLoading(false);
+    }
+  };
+
+  const handleDeletePage = async (page) => {
+    if (confirm(`Are you sure you want to delete "${page.title}"?`)) {
+      try {
+        setIsLoading(true);
+        
+        // In a real app, you would call your API
+        // await fetch(`/api/pages/${page.handle}?shop=your-shop.myshopify.com`, {
+        //   method: 'DELETE'
+        // });
+        
+        const updatedPages = pages.filter(p => p.id !== page.id);
+        setPages(updatedPages);
+        
+        setToastMessage("Page has been deleted successfully.");
+        setToastError(false);
+        setShowToast(true);
+        setIsLoading(false);
+      } catch (err) {
+        console.error('Error deleting page:', err);
+        setToastMessage('Failed to delete page. Please try again.');
+        setToastError(true);
+        setShowToast(true);
+        setIsLoading(false);
+      }
     }
   };
 
   const renderPagesList = () => {
+    if (isLoading) {
+      return <Text as="p">Loading pages...</Text>;
+    }
+    
+    if (error) {
+      return (
+        <Banner status="critical">
+          <p>{error}</p>
+        </Banner>
+      );
+    }
+    
     if (pages.length === 0) {
       return (
         <EmptyState
@@ -234,7 +253,7 @@ export default function Builder() {
   };
 
   // If in builder mode, show the page builder interface
-  if (isBuilderMode) {
+  if (isBuilderMode && selectedPage) {
     return (
       <Frame>
         <Page fullWidth>
@@ -293,10 +312,10 @@ export default function Builder() {
                 This is where you'll build and customize your pages. The builder interface will allow you to:
               </Text>
               <BlockStack gap="200">
-                <Text as="p" variant="bodyMd">• Create new pages with drag-and-drop components</Text>
-                <Text as="p" variant="bodyMd">• Customize layouts and designs</Text>
-                <Text as="p" variant="bodyMd">• Preview your changes in real-time</Text>
-                <Text as="p" variant="bodyMd">• Publish pages to your Shopify store</Text>
+                <Text as="p" variant="bodyMd">â€¢ Create new pages with drag-and-drop components</Text>
+                <Text as="p" variant="bodyMd">â€¢ Customize layouts and designs</Text>
+                <Text as="p" variant="bodyMd">â€¢ Preview your changes in real-time</Text>
+                <Text as="p" variant="bodyMd">â€¢ Publish pages to your Shopify store</Text>
               </BlockStack>
               <InlineStack gap="300">
                 <Button primary onClick={handleCreatePage}>Create New Page</Button>
@@ -318,48 +337,6 @@ export default function Builder() {
         </Layout.Section>
       </Layout>
 
-  // Default view - page list and creation
-  return (
-    <Page>
-      <TitleBar title="Page Builder" />
-
-      {showToast && (
-        <Toast
-          content={toastMessage}
-          error={toastError}
-          onDismiss={() => setShowToast(false)}
-        />
-      )}
-
-      <Layout>
-        <Layout.Section>
-          <Card>
-            <BlockStack gap="300">
-              <Text as="h2" variant="headingMd">
-                Welcome to KingsBuilder
-              </Text>
-              <Text as="p" variant="bodyMd">
-                This is where you'll build and customize your pages.
-              </Text>
-              <InlineStack gap="300">
-                <Button primary onClick={handleCreatePage}>Create New Page</Button>
-                <Button url="/app/templates">View Templates</Button>
-              </InlineStack>
-            </BlockStack>
-          </Card>
-        </Layout.Section>
-        <Layout.Section variant="oneThird">
-          <Card>
-            <BlockStack gap="400">
-              <Text as="h2" variant="headingMd">
-                Your Shopify Pages
-              </Text>
-              {renderPagesList()}
-            </BlockStack>
-          </Card>
-        </Layout.Section>
-      </Layout>
-
       <Modal
         open={isCreating || isEditing}
         onClose={() => (isCreating ? setIsCreating(false) : setIsEditing(false))}
@@ -367,11 +344,13 @@ export default function Builder() {
         primaryAction={{
           content: "Save",
           onAction: handleSavePage,
+          loading: isLoading
         }}
         secondaryActions={[
           {
             content: "Cancel",
             onAction: () => (isCreating ? setIsCreating(false) : setIsEditing(false)),
+            disabled: isLoading
           },
         ]}
       >
@@ -383,6 +362,7 @@ export default function Builder() {
               onChange={setTitle}
               autoComplete="off"
               requiredIndicator
+              disabled={isLoading}
             />
 
             {isCreating && (
@@ -392,6 +372,7 @@ export default function Builder() {
                 onChange={setHandle}
                 autoComplete="off"
                 helpText="The URL path for this page (e.g., 'about-us')"
+                disabled={isLoading}
               />
             )}
 
@@ -402,6 +383,7 @@ export default function Builder() {
               multiline={5}
               autoComplete="off"
               helpText="Enter HTML content or use the visual editor"
+              disabled={isLoading}
             />
           </FormLayout>
         </Modal.Section>

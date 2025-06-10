@@ -28,8 +28,13 @@
   min-height: 100%;
   display: flex;
   flex-direction: column;
-  justify-content: center;
-  align-items: center;
+  transition: background-color 0.3s;
+}
+
+.editor-content.drag-over {
+  background-color: rgba(44, 110, 203, 0.05);
+  border: 2px dashed #2c6ecb;
+  border-radius: 4px;
 }
 
 .placeholder-content {
@@ -46,9 +51,29 @@
   border-radius: 4px;
   cursor: move;
   background-color: #ffffff;
-  transition: background-color 0.2s;
+  transition: background-color 0.2s, transform 0.2s, box-shadow 0.2s;
 }
 
 .widget-item:hover {
   background-color: #f4f6f8;
+  transform: translateY(-2px);
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+}
+
+.widget-item:active {
+  cursor: grabbing;
+}
+
+.builder-element {
+  margin-bottom: 10px;
+  transition: border 0.2s, box-shadow 0.2s;
+}
+
+.builder-element:hover {
+  box-shadow: 0 0 0 1px #e1e3e5;
+}
+
+.builder-element.selected {
+  border: 2px solid #2c6ecb !important;
+  box-shadow: 0 0 0 1px #2c6ecb;
 }
