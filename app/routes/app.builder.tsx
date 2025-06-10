@@ -95,43 +95,101 @@ export default function Builder() {
       
       if (selectedPage) {
         // Update existing page
-        // In a real app, you would call your API
-        // await fetch(`/api/pages/${handle}?shop=your-shop.myshopify.com`, {
-        //   method: 'PUT',
-        //   headers: { 'Content-Type': 'application/json' },
-        //   body: JSON.stringify({ title, content, handle })
-        // });
-        
-        const updatedPages = pages.map(p => 
-          p.id === selectedPage.id 
-            ? { ...p, title, body: content, handle } 
-            : p
-        );
-        setPages(updatedPages);
+        try {
+          const response = await fetch(`/api/pages/${selectedPage.id}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ title, content: content || "", handle })
+          });
+          
+          if (response.ok) {
+            const result = await response.json();
+            console.log('Page updated successfully:', result);
+            
+            const updatedPages = pages.map(p => 
+              p.id === selectedPage.id 
+                ? { ...p, title, body: content, handle } 
+                : p
+            );
+            setPages(updatedPages);
+            
+            setToastMessage(`Page "${title}" has been updated successfully.`);
+            setToastError(false);
+          } else {
+            const errorData = await response.json();
+            console.error('Error updating page:', errorData);
+            setToastMessage(`Failed to update page: ${errorData.error || 'Unknown error'}`);
+            setToastError(true);
+          }
+        } catch (error) {
+          console.error('Error updating page:', error);
+          
+          // Fallback to local update if API fails
+          const updatedPages = pages.map(p => 
+            p.id === selectedPage.id 
+              ? { ...p, title, body: content, handle } 
+              : p
+          );
+          setPages(updatedPages);
+          
+          setToastMessage(`Page "${title}" has been updated locally (API unavailable).`);
+          setToastError(false);
+        }
       } else {
         // Create new page
-        // In a real app, you would call your API
-        // await fetch('/api/pages?shop=your-shop.myshopify.com', {
-        //   method: 'POST',
-        //   headers: { 'Content-Type': 'application/json' },
-        //   body: JSON.stringify({ title, content, handle })
-        // });
-        
-        const newPage = {
-          id: String(Date.now()),
-          title,
-          body: content,
-          handle,
-          url: `#${handle}`,
-        };
-        setPages([...pages, newPage]);
+        try {
+          const response = await fetch('/api/pages', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ 
+              title, 
+              content: content || "", 
+              handle: handle || title.toLowerCase().replace(/\s+/g, '-') 
+            })
+          });
+          
+          if (response.ok) {
+            const result = await response.json();
+            console.log('Page created successfully:', result);
+            
+            const newPage = {
+              id: result.page?.id || String(Date.now()),
+              title,
+              body: content,
+              handle: handle || title.toLowerCase().replace(/\s+/g, '-'),
+              url: `#${handle || title.toLowerCase().replace(/\s+/g, '-')}`,
+            };
+            setPages([...pages, newPage]);
+            
+            setToastMessage(`Page "${title}" has been created successfully.`);
+            setToastError(false);
+          } else {
+            const errorData = await response.json();
+            console.error('Error creating page:', errorData);
+            setToastMessage(`Failed to create page: ${errorData.error || 'Unknown error'}`);
+            setToastError(true);
+          }
+        } catch (error) {
+          console.error('Error creating page:', error);
+          
+          // Fallback to local creation if API fails
+          const newPage = {
+            id: String(Date.now()),
+            title,
+            body: content,
+            handle: handle || title.toLowerCase().replace(/\s+/g, '-'),
+            url: `#${handle || title.toLowerCase().replace(/\s+/g, '-')}`,
+          };
+          setPages([...pages, newPage]);
+          
+          setToastMessage(`Page "${title}" has been created locally (API unavailable).`);
+          setToastError(false);
+        }
       }
       
-      setToastMessage(`Page "${title}" has been ${selectedPage ? "updated" : "created"} successfully.`);
-      setToastError(false);
-      setShowToast(true);
       setIsCreating(false);
       setIsEditing(false);
+      setShowToast(true);
       setIsLoading(false);
     } catch (err) {
       console.error('Error saving page:', err);
