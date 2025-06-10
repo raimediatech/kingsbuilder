@@ -89,23 +89,32 @@ async function updateShopifyPage(shop, accessToken, pageId, pageData) {
  */
 async function getShopifyPages(shop, accessToken) {
   try {
-    // If no access token provided, throw error
-    if (!accessToken) {
+    // Use access token from environment if not provided
+    const token = accessToken || process.env.SHOPIFY_ADMIN_API_ACCESS_TOKEN || process.env.SHOPIFY_API_PASSWORD;
+    
+    if (!token) {
       throw new Error('No access token available for this shop');
     }
+    
+    console.log(`Fetching pages for shop: ${shop}`);
     
     const response = await axios({
       method: 'GET',
       url: `https://${shop}/admin/api/${SHOPIFY_API_VERSION}/pages.json`,
       headers: {
         'Content-Type': 'application/json',
-        'X-Shopify-Access-Token': accessToken
+        'X-Shopify-Access-Token': token
       }
     });
 
+    console.log(`Successfully fetched ${response.data.pages ? response.data.pages.length : 0} pages`);
     return response.data;
   } catch (error) {
     console.error('Error fetching Shopify pages:', error.message);
+    if (error.response) {
+      console.error('Response status:', error.response.status);
+      console.error('Response data:', error.response.data);
+    }
     throw error;
   }
 }

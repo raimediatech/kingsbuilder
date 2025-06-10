@@ -156,17 +156,18 @@ app.get('/api/pages', async (req, res) => {
   try {
     // Get shop from query parameter, header, or cookie
     const shop = req.query.shop || req.headers['x-shopify-shop-domain'] || (req.cookies && req.cookies.shopOrigin);
-    // Get access token from header or session
-    const accessToken = req.headers['x-shopify-access-token'] || (req.session && req.session.accessToken);
+    // Get access token from admin API
+    const accessToken = process.env.SHOPIFY_ADMIN_API_ACCESS_TOKEN;
     const pageId = req.query.id;
     
-    if (!shop) {
-      return res.status(400).json({ error: 'Shop parameter is required' });
-    }
+    console.log('GET /api/pages request:');
+    console.log('- Shop:', shop);
     
-    // If no access token, try to get it from the database or session
-    if (!accessToken) {
-      console.log('No access token provided, attempting to fetch from Shopify anyway');
+    if (!shop) {
+      return res.status(400).json({ 
+        success: false,
+        message: 'Shop parameter is required' 
+      });
     }
     
     if (pageId) {
@@ -175,14 +176,19 @@ app.get('/api/pages', async (req, res) => {
       console.log('Shop:', shop);
       
       const result = await shopifyApi.getShopifyPageById(shop, accessToken, pageId);
-      return res.json(result);
+      return res.json({
+        success: true,
+        page: result.page
+      });
     } else {
       // Get all pages
       console.log('Getting all pages from Shopify...');
-      console.log('Shop:', shop);
       
       const result = await shopifyApi.getShopifyPages(shop, accessToken);
-      return res.json(result);
+      return res.json({
+        success: true,
+        pages: result.pages || []
+      });
     }
   } catch (error) {
     console.error('Error getting pages:', error);

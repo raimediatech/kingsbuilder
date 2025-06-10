@@ -123,11 +123,11 @@ router.get('/analytics', async (req, res) => {
             <h1 class="app-title">KingsBuilder</h1>
             
             <div class="section-tabs">
-              <div class="tab" data-dest="/app">Dashboard</div>
-              <div class="tab" data-dest="/app/pages">Pages</div>
-              <div class="tab" data-dest="/app/templates">Templates</div>
-              <div class="tab active" data-dest="/app/analytics">Analytics</div>
-              <div class="tab" data-dest="/app/settings">Settings</div>
+              <a href="/app?shop=${shop}" class="tab">Dashboard</a>
+              <a href="/app/pages?shop=${shop}" class="tab">Pages</a>
+              <a href="/app/templates?shop=${shop}" class="tab">Templates</a>
+              <a href="/app/analytics?shop=${shop}" class="tab active">Analytics</a>
+              <a href="/app/settings?shop=${shop}" class="tab">Settings</a>
             </div>
             
             <div class="app-card">
@@ -322,31 +322,70 @@ router.get('/', async (req, res) => {
             // Load pages on startup
             async function loadPages() {
               try {
-                const response = await fetch('/api/pages?shop=' + window.shopOrigin);
-                const result = await response.json();
+                const shopOrigin = window.shopOrigin || '';
+                console.log('Loading pages for shop:', shopOrigin);
                 
+                if (!shopOrigin) {
+                  console.error('No shop origin found, cannot load pages');
+                  alert('Error: No shop specified. Please reload the app from Shopify admin.');
+                  return;
+                }
+                
+                // Get the pages container element
                 const pagesContainer = document.getElementById('pages-container');
+                if (!pagesContainer) {
+                  console.error('Pages container not found in DOM');
+                  return;
+                }
+                
+                // Show loading state
+                pagesContainer.innerHTML = '<div class="loading"><div class="loading-spinner"></div></div>';
+                
+                // Fetch pages from API with shop in query string
+                const response = await fetch('/api/pages?shop=' + encodeURIComponent(shopOrigin));
+                console.log('API Response status:', response.status);
+                
+                // Parse the JSON response
+                const result = await response.json();
+                console.log('API Response data:', result);
+                
+                // Clear loading state
                 pagesContainer.innerHTML = '';
                 
-                if (result.success && result.pages && result.pages.length > 0) {
-                  result.pages.forEach(page => {
-                    const pageCard = document.createElement('div');
-                    pageCard.className = 'app-card';
-                    pageCard.innerHTML = \`
-                      <h3 class="card-title">\${page.title}</h3>
-                      <p>\${page.body_html ? page.body_html.replace(/<[^>]*>/g, ' ').substring(0, 100) + '...' : 'No content'}</p>
-                      <div class="button-group">
-                        <a href="/builder/\${page.id}?shop=\${window.shopOrigin}" class="app-button">Edit Page</a>
-                      </div>
-                    \`;
-                    pagesContainer.appendChild(pageCard);
-                  });
+                // Check if the response is successful and has pages
+                if (result && result.success && result.pages) {
+                  if (result.pages.length > 0) {
+                    // Display each page
+                    result.pages.forEach(page => {
+                      const pageCard = document.createElement('div');
+                      pageCard.className = 'app-card';
+                      pageCard.innerHTML = \`
+                        <h3 class="card-title">\${page.title || 'Untitled Page'}</h3>
+                        <p>\${page.body_html ? page.body_html.replace(/<[^>]*>/g, ' ').substring(0, 100) + '...' : 'No content'}</p>
+                        <div class="button-group">
+                          <a href="/builder/\${page.id}?shop=\${shopOrigin}" class="app-button">Edit Page</a>
+                        </div>
+                      \`;
+                      pagesContainer.appendChild(pageCard);
+                    });
+                  } else {
+                    // No pages found
+                    pagesContainer.innerHTML = '<div class="app-card"><p>No pages found in your Shopify store. Create your first page to get started.</p></div>';
+                  }
+                } else if (result && !result.success) {
+                  // API returned an error
+                  pagesContainer.innerHTML = '<div class="app-card"><p>Error loading pages: ' + (result.message || 'Unknown error') + '</p></div>';
                 } else {
-                  pagesContainer.innerHTML = '<div class="app-card"><p>No pages found. Create your first page to get started.</p></div>';
+                  // Unexpected response format
+                  pagesContainer.innerHTML = '<div class="app-card"><p>Unexpected response from server. Please refresh to try again.</p></div>';
                 }
               } catch (error) {
                 console.error('Error loading pages:', error);
-                document.getElementById('pages-container').innerHTML = '<div class="app-card"><p>Error loading pages. Please refresh to try again.</p></div>';
+                // Show error message
+                const pagesContainer = document.getElementById('pages-container');
+                if (pagesContainer) {
+                  pagesContainer.innerHTML = '<div class="app-card"><p>Error loading pages: ' + (error.message || 'Unknown error') + '</p><p>Please refresh to try again.</p></div>';
+                }
               }
             }
             
@@ -367,11 +406,11 @@ router.get('/', async (req, res) => {
             </div>
             
             <div class="section-tabs">
-              <div class="tab active" data-dest="/app">Dashboard</div>
-              <div class="tab" data-dest="/app/pages">Pages</div>
-              <div class="tab" data-dest="/app/templates">Templates</div>
-              <div class="tab" data-dest="/app/analytics">Analytics</div>
-              <div class="tab" data-dest="/app/settings">Settings</div>
+              <a href="/app?shop=${shop}" class="tab active">Dashboard</a>
+              <a href="/app/pages?shop=${shop}" class="tab">Pages</a>
+              <a href="/app/templates?shop=${shop}" class="tab">Templates</a>
+              <a href="/app/analytics?shop=${shop}" class="tab">Analytics</a>
+              <a href="/app/settings?shop=${shop}" class="tab">Settings</a>
             </div>
             
             <div class="app-card">
@@ -497,11 +536,11 @@ router.get('/pages', async (req, res) => {
             <h1 class="app-title">KingsBuilder</h1>
             
             <div class="section-tabs">
-              <div class="tab" data-dest="/app">Dashboard</div>
-              <div class="tab active" data-dest="/app/pages">Pages</div>
-              <div class="tab" data-dest="/app/templates">Templates</div>
-              <div class="tab" data-dest="/app/analytics">Analytics</div>
-              <div class="tab" data-dest="/app/settings">Settings</div>
+              <a href="/app?shop=${shop}" class="tab">Dashboard</a>
+              <a href="/app/pages?shop=${shop}" class="tab active">Pages</a>
+              <a href="/app/templates?shop=${shop}" class="tab">Templates</a>
+              <a href="/app/analytics?shop=${shop}" class="tab">Analytics</a>
+              <a href="/app/settings?shop=${shop}" class="tab">Settings</a>
             </div>
             
             <div class="app-card">
@@ -622,11 +661,11 @@ router.get('/templates', async (req, res) => {
             <h1 class="app-title">KingsBuilder</h1>
             
             <div class="section-tabs">
-              <div class="tab" data-dest="/app">Dashboard</div>
-              <div class="tab" data-dest="/app/pages">Pages</div>
-              <div class="tab active" data-dest="/app/templates">Templates</div>
-              <div class="tab" data-dest="/app/analytics">Analytics</div>
-              <div class="tab" data-dest="/app/settings">Settings</div>
+              <a href="/app?shop=${shop}" class="tab">Dashboard</a>
+              <a href="/app/pages?shop=${shop}" class="tab">Pages</a>
+              <a href="/app/templates?shop=${shop}" class="tab active">Templates</a>
+              <a href="/app/analytics?shop=${shop}" class="tab">Analytics</a>
+              <a href="/app/settings?shop=${shop}" class="tab">Settings</a>
             </div>
             
             <div class="app-card">
@@ -747,11 +786,11 @@ router.get('/settings', async (req, res) => {
             <h1 class="app-title">KingsBuilder</h1>
             
             <div class="section-tabs">
-              <div class="tab" data-dest="/app">Dashboard</div>
-              <div class="tab" data-dest="/app/pages">Pages</div>
-              <div class="tab" data-dest="/app/templates">Templates</div>
-              <div class="tab" data-dest="/app/analytics">Analytics</div>
-              <div class="tab active" data-dest="/app/settings">Settings</div>
+              <a href="/app?shop=${shop}" class="tab">Dashboard</a>
+              <a href="/app/pages?shop=${shop}" class="tab">Pages</a>
+              <a href="/app/templates?shop=${shop}" class="tab">Templates</a>
+              <a href="/app/analytics?shop=${shop}" class="tab">Analytics</a>
+              <a href="/app/settings?shop=${shop}" class="tab active">Settings</a>
             </div>
             
             <div class="app-card">
