@@ -1,7 +1,36 @@
 const express = require('express');
+const cors = require('cors');
+const cookieParser = require('cookie-parser');
 const app = express();
 
+// Load environment variables
+require('dotenv').config();
+
+// Configure CORS
+const corsOptions = {
+  origin: process.env.CORS_ORIGIN ? process.env.CORS_ORIGIN.split(',') : [
+    'https://admin.shopify.com', 
+    'https://*.myshopify.com', 
+    'https://kingsbuilder.vercel.app'
+  ],
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Shopify-Access-Token', 'X-Shopify-Shop-Domain']
+};
+
+app.use(cors(corsOptions));
 app.use(express.json());
+app.use(cookieParser(process.env.SESSION_SECRET || 'kings-builder-session-secret'));
+
+// Configure cookies
+app.use((req, res, next) => {
+  res.cookie('shopify_app_session', '', {
+    httpOnly: true,
+    secure: process.env.COOKIE_SECURE === 'true',
+    sameSite: process.env.COOKIE_SAME_SITE || 'none'
+  });
+  next();
+});
 
 // Add security headers middleware for Shopify iframe embedding
 app.use((req, res, next) => {
@@ -13,6 +42,9 @@ app.use((req, res, next) => {
   
   // Allow scripts to run in iframe
   res.setHeader("X-Frame-Options", "ALLOW-FROM https://*.myshopify.com https://*.shopify.com");
+  
+  // Add sandbox permissions for iframe
+  res.setHeader("Permissions-Policy", "accelerometer=(), camera=(), geolocation=(), gyroscope=(), magnetometer=(), microphone=(), payment=(), usb=()");
   
   next();
 });
@@ -32,12 +64,44 @@ app.get('/api/analytics', (req, res) => {
   });
 });
 
-app.get('/api/pages', (req, res) => {
-  res.json([
-    { id: '1', title: 'Home Page', handle: 'home', status: 'published', template: 'landing', createdAt: '2024-01-15' },
-    { id: '2', title: 'About Us', handle: 'about', status: 'published', template: 'about', createdAt: '2024-01-10' },
-    { id: '3', title: 'Contact', handle: 'contact', status: 'draft', template: 'contact', createdAt: '2024-01-05' }
-  ]);
+app.get('/api/pages', async (req, res) => {
+  try {
+    const shop = req.headers['x-shopify-shop-domain'];
+    const accessToken = req.headers['x-shopify-access-token'];
+    const pageId = req.query.id;
+    
+    if (!shop || !accessToken) {
+      // Return mock data for testing if no shop or token provided
+      return res.json([
+        { id: '1', title: 'Home Page', handle: 'home', status: 'published', template: 'landing', createdAt: '2024-01-15' },
+        { id: '2', title: 'About Us', handle: 'about', status: 'published', template: 'about', createdAt: '2024-01-10' },
+        { id: '3', title: 'Contact', handle: 'contact', status: 'draft', template: 'contact', createdAt: '2024-01-05' }
+      ]);
+    }
+    
+    if (pageId) {
+      // Get a single page
+      console.log(`Getting page ${pageId} from Shopify...`);
+      console.log('Shop:', shop);
+      
+      const result = await shopifyApi.getShopifyPageById(shop, accessToken, pageId);
+      return res.json(result);
+    } else {
+      // Get all pages
+      console.log('Getting all pages from Shopify...');
+      console.log('Shop:', shop);
+      
+      const result = await shopifyApi.getShopifyPages(shop, accessToken);
+      return res.json(result);
+    }
+  } catch (error) {
+    console.error('Error getting pages:', error);
+    res.status(500).json({ 
+      success: false, 
+      message: 'Failed to get pages',
+      error: error.message 
+    });
+  }
 });
 
 app.get('/api/templates', (req, res) => {
@@ -48,75 +112,120 @@ app.get('/api/templates', (req, res) => {
   ]);
 });
 
+// Import Shopify API utilities
+const shopifyApi = require('./shopify');
+
 // POST endpoint for creating pages
-app.post('/api/pages', (req, res) => {
-  const { title, handle, template } = req.body;
-  
-  if (!title || !handle) {
-    return res.status(400).json({ error: 'Title and handle are required' });
+app.post('/api/pages', async (req, res) => {
+  try {
+    const { title, handle, template, content } = req.body;
+    const shop = req.headers['x-shopify-shop-domain'];
+    const accessToken = req.headers['x-shopify-access-token'];
+    
+    if (!title || !handle) {
+      return res.status(400).json({ error: 'Title and handle are required' });
+    }
+    
+    if (!shop || !accessToken) {
+      return res.status(401).json({ error: 'Shop domain and access token are required' });
+    }
+    
+    console.log('Creating page in Shopify...');
+    console.log('Shop:', shop);
+    console.log('Title:', title);
+    console.log('Handle:', handle);
+    
+    // Create the page in Shopify
+    const result = await shopifyApi.createShopifyPage(shop, accessToken, {
+      title,
+      handle,
+      content: content || `<div>This is a page created with KingsBuilder</div>`,
+      published: false
+    });
+    
+    res.status(201).json({ 
+      success: true, 
+      message: 'Page created successfully in Shopify',
+      page: result.page 
+    });
+  } catch (error) {
+    console.error('Error creating page:', error);
+    res.status(500).json({ 
+      success: false, 
+      message: 'Failed to create page',
+      error: error.message 
+    });
   }
-  
-  const newPage = {
-    id: Date.now().toString(),
-    title,
-    handle,
-    template: template || 'blank',
-    status: 'draft',
-    createdAt: new Date().toISOString().split('T')[0]
-  };
-  
-  res.status(201).json({ 
-    success: true, 
-    message: 'Page created successfully',
-    page: newPage 
-  });
 });
 
 // PUT endpoint for updating pages
-app.put('/api/pages/:id', (req, res) => {
-  const { id } = req.params;
-  const { title, handle, template, status, content } = req.body;
-  
-  const updatedPage = {
-    id,
-    title: title || 'Updated Page',
-    handle: handle || 'updated-page',
-    template: template || 'blank',
-    status: status || 'draft',
-    content: content || '',
-    updatedAt: new Date().toISOString().split('T')[0]
-  };
-  
-  // In a real app, you would save this to a database or call Shopify API
-  console.log(`Saving page ${id} with content length: ${content ? content.length : 0}`);
-  
-  // TODO: Add Shopify API integration to save the page to the store
-  // This would use the Shopify GraphQL Admin API to create or update a page
-  
-  res.json({ 
-    success: true, 
-    message: 'Page updated successfully',
-    page: updatedPage 
-  });
+app.put('/api/pages/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { title, handle, content, published } = req.body;
+    const shop = req.headers['x-shopify-shop-domain'];
+    const accessToken = req.headers['x-shopify-access-token'];
+    
+    if (!shop || !accessToken) {
+      return res.status(401).json({ error: 'Shop domain and access token are required' });
+    }
+    
+    console.log(`Updating page ${id} in Shopify...`);
+    console.log('Shop:', shop);
+    console.log('Content length:', content ? content.length : 0);
+    
+    // Update the page in Shopify
+    const result = await shopifyApi.updateShopifyPage(shop, accessToken, id, {
+      title: title || 'Updated Page',
+      handle: handle || `updated-page-${id}`,
+      content: content || '',
+      published: published === true
+    });
+    
+    res.json({ 
+      success: true, 
+      message: 'Page updated successfully in Shopify',
+      page: result.page 
+    });
+  } catch (error) {
+    console.error('Error updating page:', error);
+    res.status(500).json({ 
+      success: false, 
+      message: 'Failed to update page',
+      error: error.message 
+    });
+  }
 });
 
 // DELETE endpoint for deleting pages
-app.delete('/api/pages/:id', (req, res) => {
-  const { id } = req.params;
-  
-  // Set security headers for Shopify iframe embedding
-  res.setHeader(
-    "Content-Security-Policy",
-    "frame-ancestors 'self' https://*.myshopify.com https://*.shopify.com; script-src 'self' 'unsafe-inline' https://cdn.shopify.com;"
-  );
-  
-  // Allow scripts to run in iframe
-  res.setHeader("X-Frame-Options", "ALLOW-FROM https://*.myshopify.com https://*.shopify.com");
-  
-  res.json({ 
-    success: true, 
-    message: `Page ${id} deleted successfully` 
-  });
+app.delete('/api/pages/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const shop = req.headers['x-shopify-shop-domain'];
+    const accessToken = req.headers['x-shopify-access-token'];
+    
+    if (!shop || !accessToken) {
+      return res.status(401).json({ error: 'Shop domain and access token are required' });
+    }
+    
+    console.log(`Deleting page ${id} from Shopify...`);
+    console.log('Shop:', shop);
+    
+    // Delete the page from Shopify
+    await shopifyApi.deleteShopifyPage(shop, accessToken, id);
+    
+    res.json({ 
+      success: true, 
+      message: `Page ${id} deleted successfully from Shopify` 
+    });
+  } catch (error) {
+    console.error('Error deleting page:', error);
+    res.status(500).json({ 
+      success: false, 
+      message: 'Failed to delete page',
+      error: error.message 
+    });
+  }
 });
 
 // Page Builder Route - ADVANCED ELEMENTOR STYLE
@@ -820,15 +929,24 @@ app.get('/builder/:pageId', (req, res) => {
             // Get the cleaned HTML
             const cleanedContent = tempDiv.innerHTML;
             
+            // Get the page title
+            const pageTitle = document.querySelector('.page-title').textContent.replace('Editing: ', '').trim();
+            
+            console.log('Saving page content...');
+            console.log('Page ID:', pageId);
+            console.log('Shop:', shop);
+            
             // Save to the Shopify API
             fetch('/api/pages?id=' + pageId, {
               method: 'PUT',
               headers: {
                 'Content-Type': 'application/json',
-                'X-Shopify-Shop-Domain': shop
+                'X-Shopify-Shop-Domain': shop,
+                'X-Shopify-Access-Token': localStorage.getItem('shopifyToken') || ''
               },
+              credentials: 'include',
               body: JSON.stringify({
-                title: 'Updated Page',
+                title: pageTitle || 'Updated Page',
                 content: cleanedContent,
                 handle: 'updated-page-' + pageId,
                 published: false
