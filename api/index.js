@@ -1,6 +1,7 @@
 const express = require('express');
 const cors = require('cors');
 const cookieParser = require('cookie-parser');
+const path = require('path');
 const app = express();
 
 // Load environment variables
@@ -72,39 +73,55 @@ app.get('/api/health', (req, res) => {
   });
 });
 
-// Root route
+// Serve static files from the public directory
+app.use(express.static(path.join(__dirname, '../public')));
+
+// Root route - serve index.html if it exists, otherwise show API status
 app.get('/', (req, res) => {
-  res.send(`
-    <html>
-      <head>
-        <title>KingsBuilder API</title>
-        <style>
-          body { font-family: Arial, sans-serif; max-width: 800px; margin: 0 auto; padding: 20px; }
-          h1 { color: #333; }
-          .card { background: #f9f9f9; border-radius: 8px; padding: 20px; margin-bottom: 20px; }
-          .success { color: green; }
-          .error { color: red; }
-        </style>
-      </head>
-      <body>
-        <h1>KingsBuilder API</h1>
-        <div class="card">
-          <h2>Status: <span class="success">Running</span></h2>
-          <p>The KingsBuilder API is running correctly.</p>
-          <p>Environment: ${process.env.NODE_ENV || 'development'}</p>
-          <p>Shopify API Key: ${process.env.SHOPIFY_API_KEY ? '<span class="success">Configured</span>' : '<span class="error">Missing</span>'}</p>
-          <p>Shopify API Secret: ${process.env.SHOPIFY_API_SECRET ? '<span class="success">Configured</span>' : '<span class="error">Missing</span>'}</p>
-        </div>
-        <div class="card">
-          <h2>Available Endpoints</h2>
-          <ul>
-            <li><a href="/api/health">/api/health</a> - Health check endpoint</li>
-            <li><a href="/api/pages">/api/pages</a> - Get all pages</li>
-          </ul>
-        </div>
-      </body>
-    </html>
-  `);
+  // Check if this is a Shopify request
+  const shop = req.query.shop;
+  const host = req.query.host;
+  
+  if (shop || host) {
+    // This is a Shopify request, handle it with the API
+    return res.send(`
+      <html>
+        <head>
+          <title>KingsBuilder API</title>
+          <style>
+            body { font-family: Arial, sans-serif; max-width: 800px; margin: 0 auto; padding: 20px; }
+            h1 { color: #333; }
+            .card { background: #f9f9f9; border-radius: 8px; padding: 20px; margin-bottom: 20px; }
+            .success { color: green; }
+            .error { color: red; }
+          </style>
+        </head>
+        <body>
+          <h1>KingsBuilder API</h1>
+          <div class="card">
+            <h2>Status: <span class="success">Running</span></h2>
+            <p>The KingsBuilder API is running correctly.</p>
+            <p>Environment: ${process.env.NODE_ENV || 'development'}</p>
+            <p>Shopify API Key: ${process.env.SHOPIFY_API_KEY ? '<span class="success">Configured</span>' : '<span class="error">Missing</span>'}</p>
+            <p>Shopify API Secret: ${process.env.SHOPIFY_API_SECRET ? '<span class="success">Configured</span>' : '<span class="error">Missing</span>'}</p>
+            <p>Shop: ${shop || 'Not specified'}</p>
+            <p>Host: ${host || 'Not specified'}</p>
+          </div>
+          <div class="card">
+            <h2>Available Endpoints</h2>
+            <ul>
+              <li><a href="/api/health">/api/health</a> - Health check endpoint</li>
+              <li><a href="/api/pages">/api/pages</a> - Get all pages</li>
+              <li><a href="/editor">/editor</a> - Page Builder Editor</li>
+            </ul>
+          </div>
+        </body>
+      </html>
+    `);
+  }
+  
+  // Not a Shopify request, try to serve the index.html file
+  res.sendFile(path.join(__dirname, '../public/index.html'));
 });
 
 // API Routes

@@ -6,8 +6,8 @@
       "use": "@vercel/node"
     },
     {
-      "src": "package.json",
-      "use": "@vercel/remix"
+      "src": "public/**/*",
+      "use": "@vercel/static"
     }
   ],
   "routes": [
@@ -16,8 +16,19 @@
       "dest": "/api/index.js"
     },
     {
+      "src": "/editor",
+      "dest": "/public/editor.html"
+    },
+    {
+      "src": "/analytics",
+      "dest": "/public/analytics.html"
+    },
+    {
+      "handle": "filesystem"
+    },
+    {
       "src": "/(.*)",
-      "dest": "/"
+      "dest": "/api/index.js"
     }
   ]
 }
