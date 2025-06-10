@@ -3,6 +3,7 @@ import { useLoaderData } from "@remix-run/react";
 import { authenticate } from "~/shopify.server";
 import { getShopifyPageById } from "~/utils/shopify-api.server";
 import { useEffect } from "react";
+import { useAuth } from "~/components/AuthProvider";
 
 export async function loader({ request, params }: LoaderFunctionArgs) {
   const { session } = await authenticate.admin(request);
@@ -21,20 +22,36 @@ export async function loader({ request, params }: LoaderFunctionArgs) {
       pageId: id,
       pageData,
       shopDomain: session.shop,
+      accessToken: session.accessToken,
     });
   } catch (error) {
     console.error("Error loading page:", error);
-    return json({ error: "Failed to load page" }, { status: 500 });
+    return json({ 
+      error: "Failed to load page",
+      pageId: id,
+      shopDomain: session.shop,
+      accessToken: session.accessToken,
+    }, { status: 500 });
   }
 }
 
 export default function PageBuilder() {
-  const { pageId, pageData, shopDomain } = useLoaderData<typeof loader>();
+  const { pageId, pageData, shopDomain, accessToken } = useLoaderData<typeof loader>();
+  const { login } = useAuth();
   
   useEffect(() => {
+    // Store authentication info
+    if (shopDomain && accessToken) {
+      login(shopDomain, accessToken);
+      
+      // Also store in localStorage for the page builder
+      localStorage.setItem('shopifyShop', shopDomain);
+      localStorage.setItem('shopifyToken', accessToken);
+    }
+    
     // Redirect to the builder page in the Express app
     window.location.href = `/builder/${pageId}?shop=${shopDomain}`;
-  }, [pageId, shopDomain]);
+  }, [pageId, shopDomain, accessToken, login]);
   
   return (
     <div style={{ padding: "20px" }}>

@@ -7,6 +7,7 @@ import {
   useLoaderData,
 } from "@remix-run/react";
 import { AppBridgeConfig } from "./components/AppBridgeProvider";
+import { AuthProvider } from "./components/AuthProvider";
 import { json } from "@remix-run/node";
 
 export function links() {
@@ -52,11 +53,15 @@ export default function App() {
       </head>
       <body>
         {shopifyApiKey ? (
-          <AppBridgeConfig>
-            <Outlet />
-          </AppBridgeConfig>
+          <AuthProvider>
+            <AppBridgeConfig>
+              <Outlet />
+            </AppBridgeConfig>
+          </AuthProvider>
         ) : (
-          <Outlet />
+          <AuthProvider>
+            <Outlet />
+          </AuthProvider>
         )}
         <ScrollRestoration />
         <Scripts />
