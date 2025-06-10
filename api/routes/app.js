@@ -26,7 +26,7 @@ router.get('/analytics', async (req, res) => {
     // Set security headers for Shopify iframe embedding
     res.setHeader(
       "Content-Security-Policy",
-      "frame-ancestors https://*.myshopify.com https://*.shopify.com; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.shopify.com https://unpkg.com;"
+      "frame-ancestors https://*.myshopify.com https://admin.shopify.com https://*.shopify.com; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.shopify.com https://unpkg.com;"
     );
     
     // Modern way to allow embedding in iframes
@@ -38,13 +38,12 @@ router.get('/analytics', async (req, res) => {
         <head>
           <title>KingsBuilder - Analytics</title>
           <meta name="viewport" content="width=device-width, initial-scale=1.0">
-          <meta http-equiv="Content-Security-Policy" content="frame-ancestors https://*.myshopify.com https://*.shopify.com; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.shopify.com https://unpkg.com;">
           <meta name="apple-mobile-web-app-capable" content="yes">
           <meta name="mobile-web-app-capable" content="yes">
           
           <!-- Shopify App Bridge -->
-          <script src="https://cdn.shopify.com/shopifycloud/app-bridge.js"></script>
-          <script src="https://cdn.shopify.com/shopifycloud/app-bridge-utils/dist/app-bridge-utils.js"></script>
+          <script src="https://unpkg.com/@shopify/app-bridge@3.7.7"></script>
+          <script src="https://unpkg.com/@shopify/app-bridge-utils@3.5.1"></script>
           
           <style>
             * { box-sizing: border-box; }
@@ -66,6 +65,7 @@ router.get('/analytics', async (req, res) => {
               font-weight: 500;
               color: #6b7280;
               border-bottom: 2px solid transparent;
+              text-decoration: none;
             }
             .tab:hover {
               color: #111827;
@@ -85,29 +85,13 @@ router.get('/analytics', async (req, res) => {
               if (shop) {
                 const config = {
                   apiKey: apiKey,
-                  host: window.btoa('admin.shopify.com/store/' + shop.split('.')[0]),
+                  host: window.btoa(`admin.shopify.com/store/\${shop.split('.')[0]}`),
                   forceRedirect: true
                 };
                 
                 try {
-                  const app = window.shopify.createApp(config);
+                  const app = window['@shopify/app-bridge'].createApp(config);
                   window.app = app;
-                  
-                  // Add tabs navigation
-                  const tabs = document.querySelectorAll('.tab');
-                  tabs.forEach(tab => {
-                    tab.addEventListener('click', function() {
-                      const destination = this.getAttribute('data-dest');
-                      if (destination) {
-                        window.location.href = destination + '?shop=' + shop;
-                      }
-                      
-                      // Update active tab
-                      tabs.forEach(t => t.classList.remove('active'));
-                      this.classList.add('active');
-                    });
-                  });
-                  
                   console.log('App Bridge initialized');
                 } catch (error) {
                   console.error('Error initializing App Bridge:', error);
@@ -162,7 +146,7 @@ router.get('/', async (req, res) => {
     // Set security headers for Shopify iframe embedding
     res.setHeader(
       "Content-Security-Policy",
-      "frame-ancestors https://*.myshopify.com https://*.shopify.com; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.shopify.com https://unpkg.com;"
+      "frame-ancestors https://*.myshopify.com https://admin.shopify.com https://*.shopify.com; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.shopify.com https://unpkg.com;"
     );
     
     // Modern way to allow embedding in iframes
@@ -175,13 +159,12 @@ router.get('/', async (req, res) => {
         <head>
           <title>KingsBuilder</title>
           <meta name="viewport" content="width=device-width, initial-scale=1.0">
-          <meta http-equiv="Content-Security-Policy" content="frame-ancestors https://*.myshopify.com https://*.shopify.com; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.shopify.com https://unpkg.com;">
           <meta name="apple-mobile-web-app-capable" content="yes">
           <meta name="mobile-web-app-capable" content="yes">
           
           <!-- Shopify App Bridge -->
-          <script src="https://cdn.shopify.com/shopifycloud/app-bridge.js"></script>
-          <script src="https://cdn.shopify.com/shopifycloud/app-bridge-utils/dist/app-bridge-utils.js"></script>
+          <script src="https://unpkg.com/@shopify/app-bridge@3.7.7"></script>
+          <script src="https://unpkg.com/@shopify/app-bridge-utils@3.5.1"></script>
           
           <style>
             * { box-sizing: border-box; }
@@ -216,6 +199,7 @@ router.get('/', async (req, res) => {
               font-weight: 500;
               color: #6b7280;
               border-bottom: 2px solid transparent;
+              text-decoration: none;
             }
             .tab:hover {
               color: #111827;
@@ -244,25 +228,13 @@ router.get('/', async (req, res) => {
                 };
                 
                 try {
-                  const app = window.shopify.createApp(config);
+                  const app = window['@shopify/app-bridge'].createApp(config);
                   window.app = app;
-                  
-                  // Add tabs navigation
-                  const tabs = document.querySelectorAll('.tab');
-                  tabs.forEach(tab => {
-                    tab.addEventListener('click', function() {
-                      const destination = this.getAttribute('data-dest');
-                      if (destination) {
-                        window.location.href = destination + '?shop=' + shop;
-                      }
-                      
-                      // Update active tab
-                      tabs.forEach(t => t.classList.remove('active'));
-                      this.classList.add('active');
-                    });
-                  });
-                  
                   console.log('App Bridge initialized');
+                  
+                  // Initialize redirection service
+                  const redirect = window['@shopify/app-bridge/actions'].Redirect.create(app);
+                  window.shopifyRedirect = redirect;
                 } catch (error) {
                   console.error('Error initializing App Bridge:', error);
                 }
@@ -270,11 +242,6 @@ router.get('/', async (req, res) => {
                 console.warn('No shop origin found, cannot initialize App Bridge');
               }
             });
-            
-            // Function to navigate to dashboard
-            function goToDashboard() {
-              window.location.href = '/dashboard?shop=' + window.shopOrigin;
-            }
             
             // Function to create a new page
             async function createNewPage() {
@@ -297,11 +264,13 @@ router.get('/', async (req, res) => {
                   },
                   body: JSON.stringify({
                     title: title,
+                    handle: title.toLowerCase().replace(/[^a-z0-9]+/g, '-'),
                     content: '<p>Start building your page content here.</p>'
                   })
                 });
                 
                 const result = await response.json();
+                console.log('Create page result:', result);
                 
                 if (result.success) {
                   // Redirect to the builder for the new page
@@ -342,6 +311,7 @@ router.get('/', async (req, res) => {
                 pagesContainer.innerHTML = '<div class="loading"><div class="loading-spinner"></div></div>';
                 
                 // Fetch pages from API with shop in query string
+                console.log('Fetching pages from:', '/api/pages?shop=' + encodeURIComponent(shopOrigin));
                 const response = await fetch('/api/pages?shop=' + encodeURIComponent(shopOrigin));
                 console.log('API Response status:', response.status);
                 
@@ -401,7 +371,6 @@ router.get('/', async (req, res) => {
               <h1 class="app-title">KingsBuilder</h1>
               <div class="button-group">
                 <button id="create-button" class="app-button" onclick="createNewPage()">Create New Page</button>
-                <button class="app-button" onclick="goToDashboard()">Go to Dashboard</button>
               </div>
             </div>
             
@@ -441,7 +410,7 @@ router.get('/pages', async (req, res) => {
     // Set security headers for Shopify iframe embedding
     res.setHeader(
       "Content-Security-Policy",
-      "frame-ancestors https://*.myshopify.com https://*.shopify.com; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.shopify.com https://unpkg.com;"
+      "frame-ancestors https://*.myshopify.com https://admin.shopify.com https://*.shopify.com; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.shopify.com https://unpkg.com;"
     );
     
     // Modern way to allow embedding in iframes
@@ -453,13 +422,12 @@ router.get('/pages', async (req, res) => {
         <head>
           <title>KingsBuilder - Pages</title>
           <meta name="viewport" content="width=device-width, initial-scale=1.0">
-          <meta http-equiv="Content-Security-Policy" content="frame-ancestors https://*.myshopify.com https://*.shopify.com; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.shopify.com https://unpkg.com;">
           <meta name="apple-mobile-web-app-capable" content="yes">
           <meta name="mobile-web-app-capable" content="yes">
           
           <!-- Shopify App Bridge -->
-          <script src="https://cdn.shopify.com/shopifycloud/app-bridge.js"></script>
-          <script src="https://cdn.shopify.com/shopifycloud/app-bridge-utils/dist/app-bridge-utils.js"></script>
+          <script src="https://unpkg.com/@shopify/app-bridge@3.7.7"></script>
+          <script src="https://unpkg.com/@shopify/app-bridge-utils@3.5.1"></script>
           
           <style>
             * { box-sizing: border-box; }
@@ -481,6 +449,7 @@ router.get('/pages', async (req, res) => {
               font-weight: 500;
               color: #6b7280;
               border-bottom: 2px solid transparent;
+              text-decoration: none;
             }
             .tab:hover {
               color: #111827;
@@ -505,24 +474,8 @@ router.get('/pages', async (req, res) => {
                 };
                 
                 try {
-                  const app = window.shopify.createApp(config);
+                  const app = window['@shopify/app-bridge'].createApp(config);
                   window.app = app;
-                  
-                  // Add tabs navigation
-                  const tabs = document.querySelectorAll('.tab');
-                  tabs.forEach(tab => {
-                    tab.addEventListener('click', function() {
-                      const destination = this.getAttribute('data-dest');
-                      if (destination) {
-                        window.location.href = destination + '?shop=' + shop;
-                      }
-                      
-                      // Update active tab
-                      tabs.forEach(t => t.classList.remove('active'));
-                      this.classList.add('active');
-                    });
-                  });
-                  
                   console.log('App Bridge initialized');
                 } catch (error) {
                   console.error('Error initializing App Bridge:', error);
@@ -566,7 +519,7 @@ router.get('/templates', async (req, res) => {
     // Set security headers for Shopify iframe embedding
     res.setHeader(
       "Content-Security-Policy",
-      "frame-ancestors https://*.myshopify.com https://*.shopify.com; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.shopify.com https://unpkg.com;"
+      "frame-ancestors https://*.myshopify.com https://admin.shopify.com https://*.shopify.com; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.shopify.com https://unpkg.com;"
     );
     
     // Modern way to allow embedding in iframes
@@ -578,13 +531,12 @@ router.get('/templates', async (req, res) => {
         <head>
           <title>KingsBuilder - Templates</title>
           <meta name="viewport" content="width=device-width, initial-scale=1.0">
-          <meta http-equiv="Content-Security-Policy" content="frame-ancestors https://*.myshopify.com https://*.shopify.com; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.shopify.com https://unpkg.com;">
           <meta name="apple-mobile-web-app-capable" content="yes">
           <meta name="mobile-web-app-capable" content="yes">
           
           <!-- Shopify App Bridge -->
-          <script src="https://cdn.shopify.com/shopifycloud/app-bridge.js"></script>
-          <script src="https://cdn.shopify.com/shopifycloud/app-bridge-utils/dist/app-bridge-utils.js"></script>
+          <script src="https://unpkg.com/@shopify/app-bridge@3.7.7"></script>
+          <script src="https://unpkg.com/@shopify/app-bridge-utils@3.5.1"></script>
           
           <style>
             * { box-sizing: border-box; }
@@ -606,6 +558,7 @@ router.get('/templates', async (req, res) => {
               font-weight: 500;
               color: #6b7280;
               border-bottom: 2px solid transparent;
+              text-decoration: none;
             }
             .tab:hover {
               color: #111827;
@@ -630,24 +583,8 @@ router.get('/templates', async (req, res) => {
                 };
                 
                 try {
-                  const app = window.shopify.createApp(config);
+                  const app = window['@shopify/app-bridge'].createApp(config);
                   window.app = app;
-                  
-                  // Add tabs navigation
-                  const tabs = document.querySelectorAll('.tab');
-                  tabs.forEach(tab => {
-                    tab.addEventListener('click', function() {
-                      const destination = this.getAttribute('data-dest');
-                      if (destination) {
-                        window.location.href = destination + '?shop=' + shop;
-                      }
-                      
-                      // Update active tab
-                      tabs.forEach(t => t.classList.remove('active'));
-                      this.classList.add('active');
-                    });
-                  });
-                  
                   console.log('App Bridge initialized');
                 } catch (error) {
                   console.error('Error initializing App Bridge:', error);
@@ -691,7 +628,7 @@ router.get('/settings', async (req, res) => {
     // Set security headers for Shopify iframe embedding
     res.setHeader(
       "Content-Security-Policy",
-      "frame-ancestors https://*.myshopify.com https://*.shopify.com; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.shopify.com https://unpkg.com;"
+      "frame-ancestors https://*.myshopify.com https://admin.shopify.com https://*.shopify.com; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.shopify.com https://unpkg.com;"
     );
     
     // Modern way to allow embedding in iframes
@@ -703,13 +640,12 @@ router.get('/settings', async (req, res) => {
         <head>
           <title>KingsBuilder - Settings</title>
           <meta name="viewport" content="width=device-width, initial-scale=1.0">
-          <meta http-equiv="Content-Security-Policy" content="frame-ancestors https://*.myshopify.com https://*.shopify.com; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.shopify.com https://unpkg.com;">
           <meta name="apple-mobile-web-app-capable" content="yes">
           <meta name="mobile-web-app-capable" content="yes">
           
           <!-- Shopify App Bridge -->
-          <script src="https://cdn.shopify.com/shopifycloud/app-bridge.js"></script>
-          <script src="https://cdn.shopify.com/shopifycloud/app-bridge-utils/dist/app-bridge-utils.js"></script>
+          <script src="https://unpkg.com/@shopify/app-bridge@3.7.7"></script>
+          <script src="https://unpkg.com/@shopify/app-bridge-utils@3.5.1"></script>
           
           <style>
             * { box-sizing: border-box; }
@@ -731,6 +667,7 @@ router.get('/settings', async (req, res) => {
               font-weight: 500;
               color: #6b7280;
               border-bottom: 2px solid transparent;
+              text-decoration: none;
             }
             .tab:hover {
               color: #111827;
@@ -755,24 +692,8 @@ router.get('/settings', async (req, res) => {
                 };
                 
                 try {
-                  const app = window.shopify.createApp(config);
+                  const app = window['@shopify/app-bridge'].createApp(config);
                   window.app = app;
-                  
-                  // Add tabs navigation
-                  const tabs = document.querySelectorAll('.tab');
-                  tabs.forEach(tab => {
-                    tab.addEventListener('click', function() {
-                      const destination = this.getAttribute('data-dest');
-                      if (destination) {
-                        window.location.href = destination + '?shop=' + shop;
-                      }
-                      
-                      // Update active tab
-                      tabs.forEach(t => t.classList.remove('active'));
-                      this.classList.add('active');
-                    });
-                  });
-                  
                   console.log('App Bridge initialized');
                 } catch (error) {
                   console.error('Error initializing App Bridge:', error);

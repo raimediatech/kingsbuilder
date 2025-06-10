@@ -213,31 +213,34 @@ app.post('/api/pages', async (req, res) => {
   try {
     const { title, handle, template, content } = req.body;
     const shop = req.headers['x-shopify-shop-domain'] || req.query.shop || 'kingsbuilder.myshopify.com';
-    const accessToken = req.headers['x-shopify-access-token'];
     
-    if (!title || !handle) {
-      return res.status(400).json({ error: 'Title and handle are required' });
+    // Use fixed access token from environment variables
+    const accessToken = process.env.SHOPIFY_ADMIN_API_ACCESS_TOKEN || process.env.SHOPIFY_API_PASSWORD;
+    
+    if (!title) {
+      return res.status(400).json({ 
+        success: false,
+        message: 'Title is required'
+      });
     }
+    
+    // If handle is not provided, generate it from title
+    const pageHandle = handle || title.toLowerCase().replace(/[^a-z0-9]+/g, '-');
     
     console.log('Creating page...');
     console.log('Shop:', shop);
     console.log('Title:', title);
-    console.log('Handle:', handle);
+    console.log('Handle:', pageHandle);
     
-    // If no access token, try to get it from the database or session
-    if (!accessToken) {
-      console.log('No access token provided, attempting to create page in Shopify anyway');
-      // In a real app, you would try to get the access token from a database or session
-      // For now, we'll continue and let the Shopify API handle the error
-    }
-    
-    // If we have an access token, create the page in Shopify
+    // Create the page in Shopify
     const result = await shopifyApi.createShopifyPage(shop, accessToken, {
       title,
-      handle,
-      content: content || `<div>This is a page created with KingsBuilder</div>`,
+      handle: pageHandle,
+      body_html: content || `<div>This is a page created with KingsBuilder</div>`,
       published: false
     });
+    
+    console.log('Shopify page created successfully:', result);
     
     res.status(201).json({ 
       success: true, 
@@ -246,10 +249,12 @@ app.post('/api/pages', async (req, res) => {
     });
   } catch (error) {
     console.error('Error creating page:', error);
+    console.error('Error details:', error.response ? error.response.data : 'No response data');
+    
     res.status(500).json({ 
       success: false, 
-      message: 'Failed to create page',
-      error: error.message 
+      message: 'Failed to create page: ' + error.message,
+      error: error.response ? error.response.data : error.message
     });
   }
 });

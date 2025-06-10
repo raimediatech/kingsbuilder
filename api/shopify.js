@@ -20,31 +20,43 @@ const SHOPIFY_API_VERSION = '2023-10';
  */
 async function createShopifyPage(shop, accessToken, pageData) {
   try {
-    // If no access token provided, throw error
-    if (!accessToken) {
+    // Use environment token if not provided
+    const token = accessToken || process.env.SHOPIFY_ADMIN_API_ACCESS_TOKEN || process.env.SHOPIFY_API_PASSWORD;
+    
+    if (!token) {
       throw new Error('No access token available for this shop');
     }
+    
+    console.log(`Creating page in shop: ${shop}`);
+    console.log('Page data:', JSON.stringify(pageData));
     
     const response = await axios({
       method: 'POST',
       url: `https://${shop}/admin/api/${SHOPIFY_API_VERSION}/pages.json`,
       headers: {
         'Content-Type': 'application/json',
-        'X-Shopify-Access-Token': accessToken
+        'X-Shopify-Access-Token': token
       },
       data: {
         page: {
           title: pageData.title,
-          body_html: pageData.content,
+          body_html: pageData.body_html || pageData.content,
           handle: pageData.handle,
-          published: pageData.published
+          published: pageData.published === true
         }
       }
     });
 
+    console.log('Shopify API response:', response.status);
+    console.log('Created page:', response.data);
+    
     return response.data;
   } catch (error) {
     console.error('Error creating Shopify page:', error.message);
+    if (error.response) {
+      console.error('Response status:', error.response.status);
+      console.error('Response data:', error.response.data);
+    }
     throw error;
   }
 }
