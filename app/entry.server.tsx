@@ -34,6 +34,10 @@ export default async function handleRequest(
           const stream = createReadableStreamFromReadable(body);
 
           responseHeaders.set("Content-Type", "text/html");
+          // Add Content-Security-Policy headers to allow scripts in iframe
+          responseHeaders.set("Content-Security-Policy", "frame-ancestors 'self' https://*.myshopify.com https://*.shopify.com; script-src 'self' 'unsafe-inline' https://cdn.shopify.com;");
+          // Add X-Frame-Options header
+          responseHeaders.set("X-Frame-Options", "ALLOW-FROM https://*.myshopify.com https://*.shopify.com");
           resolve(
             new Response(stream, {
               headers: responseHeaders,

@@ -3,6 +3,20 @@ const app = express();
 
 app.use(express.json());
 
+// Add security headers middleware for Shopify iframe embedding
+app.use((req, res, next) => {
+  // Set security headers for Shopify iframe embedding
+  res.setHeader(
+    "Content-Security-Policy",
+    "frame-ancestors 'self' https://*.myshopify.com https://*.shopify.com; script-src 'self' 'unsafe-inline' https://cdn.shopify.com;"
+  );
+  
+  // Allow scripts to run in iframe
+  res.setHeader("X-Frame-Options", "ALLOW-FROM https://*.myshopify.com https://*.shopify.com");
+  
+  next();
+});
+
 // API Routes
 app.get('/api/analytics', (req, res) => {
   res.json({
@@ -83,6 +97,15 @@ app.put('/api/pages/:id', (req, res) => {
 app.delete('/api/pages/:id', (req, res) => {
   const { id } = req.params;
   
+  // Set security headers for Shopify iframe embedding
+  res.setHeader(
+    "Content-Security-Policy",
+    "frame-ancestors 'self' https://*.myshopify.com https://*.shopify.com; script-src 'self' 'unsafe-inline' https://cdn.shopify.com;"
+  );
+  
+  // Allow scripts to run in iframe
+  res.setHeader("X-Frame-Options", "ALLOW-FROM https://*.myshopify.com https://*.shopify.com");
+  
   res.json({ 
     success: true, 
     message: `Page ${id} deleted successfully` 
@@ -92,7 +115,17 @@ app.delete('/api/pages/:id', (req, res) => {
 // Page Builder Route - ADVANCED ELEMENTOR STYLE
 app.get('/builder/:pageId', (req, res) => {
   const { pageId } = req.params;
+  
   const shop = req.query.shop || 'kingsbuilder.myshopify.com';
+  
+  // Set security headers for Shopify iframe embedding
+  res.setHeader(
+    "Content-Security-Policy",
+    "frame-ancestors 'self' https://*.myshopify.com https://*.shopify.com; script-src 'self' 'unsafe-inline' https://cdn.shopify.com;"
+  );
+  
+  // Allow scripts to run in iframe
+  res.setHeader("X-Frame-Options", "ALLOW-FROM https://*.myshopify.com https://*.shopify.com");
   
   res.send(`
     <!DOCTYPE html>
@@ -100,6 +133,7 @@ app.get('/builder/:pageId', (req, res) => {
       <head>
         <title>KingsBuilder - Page Builder</title>
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <meta http-equiv="Content-Security-Policy" content="frame-ancestors 'self' https://*.myshopify.com https://*.shopify.com; script-src 'self' 'unsafe-inline' https://cdn.shopify.com;">
         <style>
           * { box-sizing: border-box; }
           body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; margin: 0; padding: 0; background: #f6f6f7; }
