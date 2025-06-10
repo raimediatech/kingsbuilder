@@ -1,11 +1,12 @@
 import { PassThrough } from "stream";
-import { renderToPipeableStream } from "react-dom/server";
+import { createReadableStreamFromReadable } from "@remix-run/node";
 import { RemixServer } from "@remix-run/react";
-import {
-  createReadableStreamFromReadable,
-  type EntryContext,
-} from "@remix-run/node";
 import { isbot } from "isbot";
+import { renderToPipeableStream } from "react-dom/server";
+import { createInstance } from "i18next";
+import Backend from "i18next-fs-backend";
+import { resolve } from "node:path";
+import { I18nextProvider, initReactI18next } from "react-i18next";
 import { addDocumentResponseHeaders } from "./shopify.server";
 
 export const streamTimeout = 5000;

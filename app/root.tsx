@@ -39,6 +39,9 @@ export default function App() {
           httpEquiv="X-Frame-Options"
           content="ALLOW-FROM https://*.myshopify.com https://*.shopify.com"
         />
+        <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1" />
+        <meta name="apple-mobile-web-app-capable" content="yes" />
+        <meta name="mobile-web-app-capable" content="yes" />
         <link rel="preconnect" href="https://cdn.shopify.com/" />
         <link
           rel="stylesheet"

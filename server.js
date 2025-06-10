@@ -15,6 +15,9 @@ app.use((req, res, next) => {
   // Allow scripts to run in iframe
   res.setHeader("X-Frame-Options", "ALLOW-FROM https://*.myshopify.com https://*.shopify.com");
   
+  // Add sandbox permissions for iframe
+  res.setHeader("Permissions-Policy", "accelerometer=(), camera=(), geolocation=(), gyroscope=(), magnetometer=(), microphone=(), payment=(), usb=()");
+  
   next();
 });
 

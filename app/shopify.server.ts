@@ -18,7 +18,7 @@ const shopify = shopifyApp({
   apiKey: process.env.SHOPIFY_API_KEY,
   apiSecretKey: process.env.SHOPIFY_API_SECRET || "",
   apiVersion: ApiVersion.January25,
-  scopes: process.env.SCOPES?.split(",") || ["write_products", "read_products"],
+  scopes: process.env.SCOPES?.split(",") || ["write_products", "read_products", "write_content", "read_content", "write_themes", "read_themes"],
   appUrl: process.env.SHOPIFY_APP_URL || "https://kingsbuilder-git-main-ajay-rais-projects.vercel.app",
   authPathPrefix: "/auth",
   sessionStorage: sessionStorage,

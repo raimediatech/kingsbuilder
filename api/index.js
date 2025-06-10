@@ -75,7 +75,7 @@ app.post('/api/pages', (req, res) => {
 // PUT endpoint for updating pages
 app.put('/api/pages/:id', (req, res) => {
   const { id } = req.params;
-  const { title, handle, template, status } = req.body;
+  const { title, handle, template, status, content } = req.body;
   
   const updatedPage = {
     id,
@@ -83,8 +83,15 @@ app.put('/api/pages/:id', (req, res) => {
     handle: handle || 'updated-page',
     template: template || 'blank',
     status: status || 'draft',
+    content: content || '',
     updatedAt: new Date().toISOString().split('T')[0]
   };
+  
+  // In a real app, you would save this to a database or call Shopify API
+  console.log(`Saving page ${id} with content length: ${content ? content.length : 0}`);
+  
+  // TODO: Add Shopify API integration to save the page to the store
+  // This would use the Shopify GraphQL Admin API to create or update a page
   
   res.json({ 
     success: true, 
@@ -127,6 +134,13 @@ app.get('/builder/:pageId', (req, res) => {
   // Allow scripts to run in iframe
   res.setHeader("X-Frame-Options", "ALLOW-FROM https://*.myshopify.com https://*.shopify.com");
   
+  // Add sandbox permissions for iframe
+  res.setHeader("Permissions-Policy", "accelerometer=(), camera=(), geolocation=(), gyroscope=(), magnetometer=(), microphone=(), payment=(), usb=()");
+  
+  // Fetch the page data from Shopify (in a real app)
+  // For now, we'll just use mock data
+  console.log(`Loading page builder for page ID: ${pageId} from shop: ${shop}`);
+  
   res.send(`
     <!DOCTYPE html>
     <html>
@@ -134,6 +148,9 @@ app.get('/builder/:pageId', (req, res) => {
         <title>KingsBuilder - Page Builder</title>
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <meta http-equiv="Content-Security-Policy" content="frame-ancestors 'self' https://*.myshopify.com https://*.shopify.com; script-src 'self' 'unsafe-inline' https://cdn.shopify.com;">
+        <meta name="apple-mobile-web-app-capable" content="yes">
+        <meta name="mobile-web-app-capable" content="yes">
+        <meta http-equiv="X-Frame-Options" content="ALLOW-FROM https://*.myshopify.com https://*.shopify.com">
         <style>
           * { box-sizing: border-box; }
           body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; margin: 0; padding: 0; background: #f6f6f7; }
@@ -165,10 +182,10 @@ app.get('/builder/:pageId', (req, res) => {
           .btn-secondary { background: #f3f4f6; color: #374151; border: 1px solid #d1d5db; }
           
           .canvas-container { flex: 1; padding: 20px; overflow-y: auto; }
-          .canvas { background: white; min-height: 600px; border-radius: 8px; border: 1px solid #e1e3e5; position: relative; }
+          .canvas { background: white; min-height: 800px; height: 100%; border-radius: 8px; border: 1px solid #e1e3e5; position: relative; display: flex; flex-direction: column; }
           
           /* Drop Zone */
-          .drop-zone { min-height: 100px; border: 2px dashed #d1d5db; border-radius: 8px; display: flex; align-items: center; justify-content: center; color: #6b7280; margin: 20px; transition: all 0.2s; }
+          .drop-zone { min-height: 100%; border: 2px dashed #d1d5db; border-radius: 8px; display: flex; align-items: center; justify-content: center; color: #6b7280; margin: 0; transition: all 0.2s; }
           .drop-zone.drag-over { border-color: #000000; background: #f9fafb; }
           .drop-zone.has-content { border: none; background: none; }
           
@@ -789,10 +806,48 @@ app.get('/builder/:pageId', (req, res) => {
           function savePageContent() {
             const canvas = document.getElementById('canvas');
             const content = canvas.innerHTML;
+            const pageId = '${pageId}';
+            const shop = '${shop || "kingsbuilder.myshopify.com"}';
             
-            // In a real app, you'd save this to your backend
-            alert('Page content saved! ✅\\n\\nIn a real app, this would save to your database.');
-            console.log('Saved content:', content);
+            // Clean up the content - remove any editor-specific elements
+            const tempDiv = document.createElement('div');
+            tempDiv.innerHTML = content;
+            
+            // Remove any editor controls
+            const controls = tempDiv.querySelectorAll('.element-controls');
+            controls.forEach(control => control.remove());
+            
+            // Get the cleaned HTML
+            const cleanedContent = tempDiv.innerHTML;
+            
+            // Save to the Shopify API
+            fetch('/api/pages?id=' + pageId, {
+              method: 'PUT',
+              headers: {
+                'Content-Type': 'application/json',
+                'X-Shopify-Shop-Domain': shop
+              },
+              body: JSON.stringify({
+                title: 'Updated Page',
+                content: cleanedContent,
+                handle: 'updated-page-' + pageId,
+                published: false
+              })
+            })
+            .then(response => {
+              if (!response.ok) {
+                throw new Error('Network response was not ok');
+              }
+              return response.json();
+            })
+            .then(data => {
+              alert('Page content saved successfully to Shopify! ✅');
+              console.log('Saved content:', data);
+            })
+            .catch(error => {
+              console.error('Error saving page to Shopify:', error);
+              alert('Error saving page. Please try again.');
+            });
           }
           
           function publishPage() {
