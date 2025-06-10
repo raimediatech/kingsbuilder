@@ -17,6 +17,129 @@ router.get('/debug', (req, res) => {
 // Apply Shopify JWT verification middleware
 router.use(verifyShopifyJWT);
 
+// Create Analytics route
+router.get('/analytics', async (req, res) => {
+  try {
+    // Get shop from various possible sources
+    const shop = req.query.shop || req.shopifyShop || req.headers['x-shopify-shop-domain'] || req.cookies?.shopOrigin;
+    
+    // Set security headers for Shopify iframe embedding
+    res.setHeader(
+      "Content-Security-Policy",
+      "frame-ancestors https://*.myshopify.com https://*.shopify.com; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.shopify.com https://unpkg.com;"
+    );
+    
+    // Modern way to allow embedding in iframes
+    res.removeHeader('X-Frame-Options');
+    
+    res.send(`
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <title>KingsBuilder - Analytics</title>
+          <meta name="viewport" content="width=device-width, initial-scale=1.0">
+          <meta http-equiv="Content-Security-Policy" content="frame-ancestors https://*.myshopify.com https://*.shopify.com; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.shopify.com https://unpkg.com;">
+          <meta name="apple-mobile-web-app-capable" content="yes">
+          <meta name="mobile-web-app-capable" content="yes">
+          
+          <!-- Shopify App Bridge -->
+          <script src="https://unpkg.com/@shopify/app-bridge@3"></script>
+          <script src="https://unpkg.com/@shopify/app-bridge-utils@3"></script>
+          <script>
+            var actions = window.shopify?.actions || { 
+              Navigation: { create: () => {} },
+              NavigationMenu: { 
+                create: () => {},
+                Action: { UPDATE: 'UPDATE' }
+              }
+            };
+          </script>
+          
+          <style>
+            * { box-sizing: border-box; }
+            body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; margin: 0; padding: 0; background: #f6f6f7; }
+            
+            .app-container { max-width: 1200px; margin: 0 auto; padding: 20px; }
+            .app-title { margin: 0 0 20px 0; font-size: 24px; font-weight: 600; color: #111827; }
+            .app-card { background: white; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); padding: 20px; }
+          </style>
+          
+          <script>
+            // Initialize App Bridge
+            document.addEventListener('DOMContentLoaded', function() {
+              const apiKey = "128d69fb5441ba3eda3ae4694c71b175";
+              const shop = '${shop || ''}';
+              
+              if (shop) {
+                const config = {
+                  apiKey: apiKey,
+                  host: window.btoa('admin.shopify.com/store/' + shop.split('.')[0]),
+                  forceRedirect: true
+                };
+                
+                try {
+                  const app = window.shopify.createApp(config);
+                  
+                  // Set up app navigation for sidebar
+                  const menu = actions.NavigationMenu.create(app);
+                  menu.subscribe(actions.NavigationMenu.Action.UPDATE, (payload) => {
+                    console.log('NavigationMenu updated:', payload);
+                  });
+                  
+                  // Register the navigation items in the Shopify Admin sidebar
+                  menu.create({
+                    items: [
+                      {
+                        id: 'dashboard',
+                        destination: '/app',
+                        label: 'Dashboard'
+                      },
+                      {
+                        id: 'pages',
+                        destination: '/app/pages',
+                        label: 'Pages'
+                      },
+                      {
+                        id: 'templates',
+                        destination: '/app/templates',
+                        label: 'Templates'
+                      },
+                      {
+                        id: 'analytics',
+                        destination: '/app/analytics',
+                        label: 'Analytics',
+                        selected: true
+                      },
+                      {
+                        id: 'settings',
+                        destination: '/app/settings',
+                        label: 'Settings'
+                      }
+                    ]
+                  });
+                } catch (error) {
+                  console.error('Error initializing App Bridge:', error);
+                }
+              }
+            });
+          </script>
+        </head>
+        <body>
+          <div class="app-container">
+            <h1 class="app-title">Analytics</h1>
+            <div class="app-card">
+              <p>View performance metrics and insights for your KingsBuilder pages.</p>
+            </div>
+          </div>
+        </body>
+      </html>
+    `);
+  } catch (error) {
+    console.error('Error in analytics route:', error);
+    res.status(500).send('An error occurred. Please try again.');
+  }
+});
+
 // Main app route - handles the embedded app view
 router.get('/', async (req, res) => {
   try {
@@ -56,7 +179,13 @@ router.get('/', async (req, res) => {
           <script src="https://unpkg.com/@shopify/app-bridge@3"></script>
           <script src="https://unpkg.com/@shopify/app-bridge-utils@3"></script>
           <script>
-            var actions = window.shopify?.actions || { Navigation: { create: () => {} } };
+            var actions = window.shopify?.actions || { 
+              Navigation: { create: () => {} },
+              NavigationMenu: { 
+                create: () => {},
+                Action: { UPDATE: 'UPDATE' }
+              }
+            };
           </script>
           
           <style>
@@ -101,26 +230,38 @@ router.get('/', async (req, res) => {
                 try {
                   const app = window.shopify.createApp(config);
                   
-                  // Set up app navigation
-                  const nav = actions.Navigation.create(app);
+                  // Set up app navigation for sidebar
+                  const menu = actions.NavigationMenu.create(app);
+                  menu.subscribe(actions.NavigationMenu.Action.UPDATE, (payload) => {
+                    console.log('NavigationMenu updated:', payload);
+                  });
                   
-                  // Create the navigation structure
-                  nav.set({
+                  // Register the navigation items in the Shopify Admin sidebar
+                  menu.create({
                     items: [
                       {
+                        id: 'dashboard',
                         destination: '/app',
                         label: 'Dashboard',
                         selected: true
                       },
                       {
+                        id: 'pages',
                         destination: '/app/pages',
                         label: 'Pages'
                       },
                       {
+                        id: 'templates',
                         destination: '/app/templates',
                         label: 'Templates'
                       },
                       {
+                        id: 'analytics',
+                        destination: '/app/analytics',
+                        label: 'Analytics'
+                      },
+                      {
+                        id: 'settings',
                         destination: '/app/settings',
                         label: 'Settings'
                       }
@@ -279,7 +420,13 @@ router.get('/pages', async (req, res) => {
           <script src="https://unpkg.com/@shopify/app-bridge@3"></script>
           <script src="https://unpkg.com/@shopify/app-bridge-utils@3"></script>
           <script>
-            var actions = window.shopify?.actions || { Navigation: { create: () => {} } };
+            var actions = window.shopify?.actions || { 
+              Navigation: { create: () => {} },
+              NavigationMenu: { 
+                create: () => {},
+                Action: { UPDATE: 'UPDATE' }
+              }
+            };
           </script>
           
           <style>
@@ -307,26 +454,38 @@ router.get('/pages', async (req, res) => {
                 try {
                   const app = window.shopify.createApp(config);
                   
-                  // Set up app navigation
-                  const nav = actions.Navigation.create(app);
+                  // Set up app navigation for sidebar
+                  const menu = actions.NavigationMenu.create(app);
+                  menu.subscribe(actions.NavigationMenu.Action.UPDATE, (payload) => {
+                    console.log('NavigationMenu updated:', payload);
+                  });
                   
-                  // Create the navigation structure
-                  nav.set({
+                  // Register the navigation items in the Shopify Admin sidebar
+                  menu.create({
                     items: [
                       {
+                        id: 'dashboard',
                         destination: '/app',
                         label: 'Dashboard'
                       },
                       {
+                        id: 'pages',
                         destination: '/app/pages',
                         label: 'Pages',
                         selected: true
                       },
                       {
+                        id: 'templates',
                         destination: '/app/templates',
                         label: 'Templates'
                       },
                       {
+                        id: 'analytics',
+                        destination: '/app/analytics',
+                        label: 'Analytics'
+                      },
+                      {
+                        id: 'settings',
                         destination: '/app/settings',
                         label: 'Settings'
                       }
@@ -384,7 +543,13 @@ router.get('/templates', async (req, res) => {
           <script src="https://unpkg.com/@shopify/app-bridge@3"></script>
           <script src="https://unpkg.com/@shopify/app-bridge-utils@3"></script>
           <script>
-            var actions = window.shopify?.actions || { Navigation: { create: () => {} } };
+            var actions = window.shopify?.actions || { 
+              Navigation: { create: () => {} },
+              NavigationMenu: { 
+                create: () => {},
+                Action: { UPDATE: 'UPDATE' }
+              }
+            };
           </script>
           
           <style>
@@ -412,26 +577,38 @@ router.get('/templates', async (req, res) => {
                 try {
                   const app = window.shopify.createApp(config);
                   
-                  // Set up app navigation
-                  const nav = actions.Navigation.create(app);
+                  // Set up app navigation for sidebar
+                  const menu = actions.NavigationMenu.create(app);
+                  menu.subscribe(actions.NavigationMenu.Action.UPDATE, (payload) => {
+                    console.log('NavigationMenu updated:', payload);
+                  });
                   
-                  // Create the navigation structure
-                  nav.set({
+                  // Register the navigation items in the Shopify Admin sidebar
+                  menu.create({
                     items: [
                       {
+                        id: 'dashboard',
                         destination: '/app',
                         label: 'Dashboard'
                       },
                       {
+                        id: 'pages',
                         destination: '/app/pages',
                         label: 'Pages'
                       },
                       {
+                        id: 'templates',
                         destination: '/app/templates',
                         label: 'Templates',
                         selected: true
                       },
                       {
+                        id: 'analytics',
+                        destination: '/app/analytics',
+                        label: 'Analytics'
+                      },
+                      {
+                        id: 'settings',
                         destination: '/app/settings',
                         label: 'Settings'
                       }
@@ -489,7 +666,13 @@ router.get('/settings', async (req, res) => {
           <script src="https://unpkg.com/@shopify/app-bridge@3"></script>
           <script src="https://unpkg.com/@shopify/app-bridge-utils@3"></script>
           <script>
-            var actions = window.shopify?.actions || { Navigation: { create: () => {} } };
+            var actions = window.shopify?.actions || { 
+              Navigation: { create: () => {} },
+              NavigationMenu: { 
+                create: () => {},
+                Action: { UPDATE: 'UPDATE' }
+              }
+            };
           </script>
           
           <style>
@@ -517,25 +700,37 @@ router.get('/settings', async (req, res) => {
                 try {
                   const app = window.shopify.createApp(config);
                   
-                  // Set up app navigation
-                  const nav = actions.Navigation.create(app);
+                  // Set up app navigation for sidebar
+                  const menu = actions.NavigationMenu.create(app);
+                  menu.subscribe(actions.NavigationMenu.Action.UPDATE, (payload) => {
+                    console.log('NavigationMenu updated:', payload);
+                  });
                   
-                  // Create the navigation structure
-                  nav.set({
+                  // Register the navigation items in the Shopify Admin sidebar
+                  menu.create({
                     items: [
                       {
+                        id: 'dashboard',
                         destination: '/app',
                         label: 'Dashboard'
                       },
                       {
+                        id: 'pages',
                         destination: '/app/pages',
                         label: 'Pages'
                       },
                       {
+                        id: 'templates',
                         destination: '/app/templates',
                         label: 'Templates'
                       },
                       {
+                        id: 'analytics',
+                        destination: '/app/analytics',
+                        label: 'Analytics'
+                      },
+                      {
+                        id: 'settings',
                         destination: '/app/settings',
                         label: 'Settings',
                         selected: true
