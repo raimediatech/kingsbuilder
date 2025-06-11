@@ -131,18 +131,7 @@ app.get('/api/health', (req, res) => {
 // Serve static files from the public directory
 app.use(express.static(path.join(__dirname, '../public')));
 
-// Root route - serve index.html if it exists, otherwise show API status
-app.get('/', (req, res) => {
-  const shop = req.query.shop || req.cookies?.shopOrigin;
-
-  if (shop) {
-    // If we have a shop parameter, go to dashboard
-    res.redirect('/dashboard?shop=' + shop);
-  } else {
-    // Otherwise go to landing page
-    res.redirect('/landing');
-  }
-});
+// Import dashboard routes\r\ntry {\r\n  const dashboardRoutes = require('./routes/dashboard');\r\n  app.use('/dashboard', dashboardRoutes);\r\n  console.log('Dashboard routes registered successfully');\r\n} catch (error) {\r\n  console.error('Error loading dashboard routes:', error);\r\n}\r\n\r\ntry {\r\n  const dashboardModernRoutes = require('./routes/dashboard-modern');\r\n  app.use('/dashboard-modern', dashboardModernRoutes);\r\n  console.log('Modern dashboard routes registered successfully');\r\n} catch (error) {\r\n  console.error('Error loading modern dashboard routes:', error);\r\n}\r\n\r\n// Root route - serve index.html if it exists, otherwise show API status\r\napp.get('/', (req, res) => {\r\n  const shop = req.query.shop || req.cookies?.shopOrigin;\r\n\r\n  if (shop) {\r\n    // If we have a shop parameter, go to dashboard\r\n    res.redirect('/dashboard?shop=' + shop);\r\n  } else {\r\n    // Otherwise go to landing page\r\n    res.redirect('/landing');\r\n  }\r\n});
 
 // This is a fallback for the old builder route
 app.get('/builder-old/:pageId', (req, res) => {
@@ -264,4 +253,5 @@ app.get('/app', (req, res) => {
     res.redirect('/install');
   }
 });
+
 
