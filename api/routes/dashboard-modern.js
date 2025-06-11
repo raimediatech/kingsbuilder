@@ -421,7 +421,7 @@ router.get('/', async (req, res) => {
                 <button id="theme-toggle" class="theme-toggle">
                   <i class="fas fa-moon"></i>
                 </button>
-                <a href="/api/pages/new" class="btn">
+                <a href="/pages/new?shop=${shop}" class="btn">
                   <i class="fas fa-plus"></i>
                   Create Page
                 </a>
@@ -459,7 +459,7 @@ router.get('/', async (req, res) => {
                           </span>
                         </td>
                         <td class="actions">
-                          <a href="/api/builder/${page.id}" class="action-btn" title="Edit">
+                          <a href="/builder/${page.id}?shop=${shop}" class="action-btn" title="Edit">
                             <i class="fas fa-edit"></i>
                           </a>
                           <button class="action-btn" title="Delete" onclick="deletePage('${page.id}')">
@@ -478,7 +478,7 @@ router.get('/', async (req, res) => {
                   <i class="fas fa-file-alt"></i>
                   <h3>No pages found</h3>
                   <p>Create your first page to get started</p>
-                  <a href="/api/pages/new" class="btn">
+                  <a href="/pages/new?shop=${shop}" class="btn">
                     <i class="fas fa-plus"></i>
                     Create Page
                   </a>
@@ -582,3 +582,5 @@ router.get('/', async (req, res) => {
 });
 
 module.exports = router;
+
+
