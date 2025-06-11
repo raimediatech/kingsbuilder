@@ -10,10 +10,10 @@ router.get('/:pageId', async (req, res) => {
     const { pageId } = req.params;
     
     // Get shop from various possible sources
-    const shop = req.query.shop || req.shopifyShop || req.headers['x-shopify-shop-domain'] || req.cookies?.shopOrigin;
+    let shop = req.query.shop || req.shopifyShop || req.headers['x-shopify-shop-domain'] || req.cookies?.shopOrigin;
     
     // Get access token from various possible sources
-    const accessToken = req.headers['x-shopify-access-token'] || req.shopifyAccessToken || req.cookies?.shopifyAccessToken;
+    let accessToken = req.headers['x-shopify-access-token'] || req.shopifyAccessToken || req.cookies?.shopifyAccessToken;
     
     // Set security headers for Shopify iframe embedding
     res.setHeader(
@@ -26,14 +26,35 @@ router.get('/:pageId', async (req, res) => {
     
     console.log(`Loading page builder for page ID: ${pageId} from shop: ${shop}`);
     
-    // Try to fetch the real page data from Shopify
+    // Try to fetch the real page data from Shopify API using our new bridge
     let pageData = null;
     if (shop && accessToken) {
       try {
-        const result = await shopifyApi.getShopifyPageById(shop, accessToken, pageId);
-        if (result && result.page) {
-          pageData = result.page;
-          console.log('Successfully fetched page data from Shopify');
+        // First try using our new shopify-bridge API
+        const apiResult = await fetch(`/api/shopify/pages/${pageId}`, {
+          headers: {
+            'X-Shopify-Shop-Domain': shop,
+            'X-Shopify-Access-Token': accessToken
+          }
+        });
+        
+        if (apiResult.ok) {
+          const data = await apiResult.json();
+          if (data.success && data.page) {
+            pageData = data.page;
+            console.log('Successfully fetched page data from Shopify via API bridge');
+          }
+        } else {
+          console.log('Failed to fetch from API bridge, falling back to direct method');
+        }
+        
+        // Fallback to direct method if bridge fails
+        if (!pageData) {
+          const result = await shopifyApi.getShopifyPageById(shop, accessToken, pageId);
+          if (result && result.page) {
+            pageData = result.page;
+            console.log('Successfully fetched page data from Shopify via direct API');
+          }
         }
       } catch (error) {
         console.error('Error fetching page from Shopify:', error.message);
