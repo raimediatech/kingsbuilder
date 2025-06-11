@@ -251,3 +251,16 @@ app.get('/landing', (req, res) => {
 </html>`);
 });
 
+
+// App route for Shopify admin
+app.get('/app', (req, res) => {
+  const shop = req.query.shop || req.cookies?.shopOrigin;
+  
+  if (shop) {
+    // Redirect to dashboard with shop parameter
+    res.redirect('/dashboard?shop=' + shop);
+  } else {
+    // If no shop parameter, redirect to install
+    res.redirect('/install');
+  }
+});
