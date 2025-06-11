@@ -10,7 +10,7 @@
       "use": "@vercel/static"
     }
   ],
-  "routes": [
+  "routes": [\r\n    {\r\n      "src": "/dashboard",\r\n      "dest": "/api/index.js"\r\n    },\r\n    {\r\n      "src": "/dashboard/(.*)",\r\n      "dest": "/api/index.js"\r\n    },\r\n    {\r\n      "src": "/dashboard-modern",\r\n      "dest": "/api/index.js"\r\n    },\r\n    {\r\n      "src": "/dashboard-modern/(.*)",\r\n      "dest": "/api/index.js"\r\n    },
     {
       "src": "/api/health",
       "dest": "/api/index.js"
@@ -60,3 +60,4 @@
     "COOKIE_SAME_SITE": "none"
   }
 }
+
