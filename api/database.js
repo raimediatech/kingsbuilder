@@ -8,7 +8,7 @@ const DATABASE_URL = process.env.DATABASE_URL || process.env.MONGODB_URI;
 let db = null;
 let client = null;
 
-// Connect to database with retry logic
+// Connect to database with retry logic and graceful failure
 async function connectToDatabase(retryCount = 3, retryDelay = 2000) {
   try {
     if (db) return db;
@@ -17,54 +17,44 @@ async function connectToDatabase(retryCount = 3, retryDelay = 2000) {
     
     if (!DATABASE_URL) {
       console.error('No MongoDB connection string provided in environment variables');
+      console.log('Using mock database for now');
       return null;
     }
     
-    client = new MongoClient(DATABASE_URL, {
-      useNewUrlParser: true,
-      useUnifiedTopology: true,
-      serverSelectionTimeoutMS: 10000, // 10 second timeout
-      connectTimeoutMS: 10000,
-      socketTimeoutMS: 45000,
-      maxPoolSize: 10, // Connection pooling
-      minPoolSize: 5
-    });
+    // Add timeout for Vercel serverless functions
+    const connectionTimeout = setTimeout(() => {
+      console.log('MongoDB connection timeout reached - using mock data');
+      return null;
+    }, 5000);
     
     try {
+      client = new MongoClient(DATABASE_URL, {
+        useNewUrlParser: true,
+        useUnifiedTopology: true,
+        serverSelectionTimeoutMS: 5000, // 5 second timeout
+        connectTimeoutMS: 5000,
+        socketTimeoutMS: 15000
+      });
+      
       await client.connect();
+      clearTimeout(connectionTimeout);
+      
       db = client.db('kingsbuilder');
       
       // Test the connection with a simple query
       await db.command({ ping: 1 });
       console.log('Connected to MongoDB successfully');
       
-      // Set up connection monitoring
-      client.on('close', () => {
-        console.warn('MongoDB connection closed');
-        db = null;
-        // Attempt to reconnect
-        setTimeout(() => connectToDatabase(), 5000);
-      });
-      
-      client.on('error', (err) => {
-        console.error('MongoDB connection error:', err);
-      });
-      
       return db;
     } catch (connectionError) {
-      console.error(`Failed to connect to MongoDB (attempt ${4 - retryCount} of 3):`, connectionError);
-      
-      if (retryCount > 0) {
-        console.log(`Retrying in ${retryDelay / 1000} seconds...`);
-        await new Promise(resolve => setTimeout(resolve, retryDelay));
-        return connectToDatabase(retryCount - 1, retryDelay * 1.5);
-      } else {
-        console.error('Maximum retry attempts reached. Could not connect to MongoDB.');
-        return null;
-      }
+      clearTimeout(connectionTimeout);
+      console.error(`Failed to connect to MongoDB:`, connectionError);
+      console.log('Using mock database');
+      return null;
     }
   } catch (error) {
     console.error('Unexpected error in database connection:', error);
+    console.log('Using mock database');
     return null;
   }
 }

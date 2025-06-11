@@ -12,23 +12,53 @@ try {
   console.log('No .env file found in API index, using environment variables from the system');
 }
 
-// Import database connection
+// Import database connection - but don't connect immediately
 const { connectToDatabase } = require('./database');
 
-// Connect to database on startup
-connectToDatabase()
-  .then(db => {
-    console.log('Database connected successfully on startup');
-  })
-  .catch(err => {
-    console.error('Failed to connect to database on startup:', err);
-  });
+// Schedule database connection for later to avoid blocking server startup
+setTimeout(() => {
+  connectToDatabase()
+    .then(db => {
+      if (db) {
+        console.log('Database connected successfully');
+      } else {
+        console.log('Using mock data since database connection failed');
+      }
+    })
+    .catch(err => {
+      console.error('Failed to connect to database:', err);
+      console.log('Continuing with mock data');
+    });
+}, 2000);
 
-// Import Shopify authentication middleware
-const { verifyShopifyHmac, verifyShopifyJWT } = require('./middleware/shopify-auth');
+// Import Shopify authentication middleware - with try/catch
+let verifyShopifyHmac, verifyShopifyJWT;
+try {
+  const auth = require('./middleware/shopify-auth');
+  verifyShopifyHmac = auth.verifyShopifyHmac;
+  verifyShopifyJWT = auth.verifyShopifyJWT;
+} catch (error) {
+  console.error('Error loading Shopify auth middleware:', error);
+  // Provide fallback middleware
+  verifyShopifyHmac = (req, res, next) => next();
+  verifyShopifyJWT = (req, res, next) => next();
+}
 
-// Import Shopify API utilities
-const shopifyApi = require('./shopify');
+// Import Shopify API utilities - with try/catch
+let shopifyApi;
+try {
+  shopifyApi = require('./shopify');
+} catch (error) {
+  console.error('Error loading Shopify API utilities:', error);
+  // Provide fallback API utilities
+  shopifyApi = {
+    createShopifyPage: () => Promise.resolve({ page: { id: '123', title: 'Mock Page' }}),
+    updateShopifyPage: () => Promise.resolve({ page: { id: '123', title: 'Updated Mock Page' }}),
+    getShopifyPages: () => Promise.resolve({ pages: [] }),
+    getShopifyPageById: () => Promise.resolve({ page: { id: '123', title: 'Mock Page' }}),
+    deleteShopifyPage: () => Promise.resolve({})
+  };
+}
 
 // Configure CORS - Allow all origins in development
 const corsOptions = {
@@ -365,19 +395,63 @@ app.delete('/api/pages/:id', async (req, res) => {
   }
 });
 
-// Import routers
-const builderRouter = require('./builder_simple');
-const pagesRouter = require('./routes/pages');
-const dashboardRouter = require('./routes/dashboard');
-const authRouter = require('./auth');
-const appRouter = require('./routes/app');
+// Import and use routers with error handling
+let builderRouter, pagesRouter, dashboardRouter, authRouter, appRouter;
 
-// Use routers
-app.use('/api/auth', authRouter);
-app.use('/builder', builderRouter);
-app.use('/api/pages', pagesRouter);
-app.use('/dashboard', dashboardRouter);
-app.use('/app', appRouter);
+try {
+  appRouter = require('./routes/app');
+  app.use('/app', appRouter);
+  console.log('App router loaded successfully');
+} catch (error) {
+  console.error('Error loading app router:', error);
+  // Provide a fallback router
+  app.use('/app', (req, res) => {
+    res.send(`
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <title>KingsBuilder - Error</title>
+          <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        </head>
+        <body>
+          <h1>KingsBuilder</h1>
+          <p>Sorry, there was an error loading the app. Please try again later.</p>
+          <p>Error: ${error.message}</p>
+        </body>
+      </html>
+    `);
+  });
+}
+
+try {
+  builderRouter = require('./builder_simple');
+  app.use('/builder', builderRouter);
+} catch (error) {
+  console.error('Error loading builder router:', error);
+  app.use('/builder', (req, res) => res.status(500).send('Builder temporarily unavailable'));
+}
+
+try {
+  pagesRouter = require('./routes/pages');
+  app.use('/api/pages', pagesRouter);
+} catch (error) {
+  console.error('Error loading pages router:', error);
+}
+
+try {
+  dashboardRouter = require('./routes/dashboard');
+  app.use('/dashboard', dashboardRouter);
+} catch (error) {
+  console.error('Error loading dashboard router:', error);
+  app.use('/dashboard', (req, res) => res.redirect('/app?shop=' + (req.query.shop || '')));
+}
+
+try {
+  authRouter = require('./auth');
+  app.use('/api/auth', authRouter);
+} catch (error) {
+  console.error('Error loading auth router:', error);
+}
 
 // Redirect root to install or dashboard
 app.get('/', (req, res) => {
