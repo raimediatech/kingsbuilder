@@ -133,358 +133,14 @@ app.use(express.static(path.join(__dirname, '../public')));
 
 // Root route - serve index.html if it exists, otherwise show API status
 app.get('/', (req, res) => {
-  // Check if this is a Shopify request
-  const shop = req.query.shop;
-  const host = req.query.host;
-  
-  if (shop || host) {
-    // This is a Shopify request, handle it with the API
-    return res.send(`
-      <html>
-        <head>
-          <title>KingsBuilder API</title>
-          <style>
-            body { font-family: Arial, sans-serif; max-width: 800px; margin: 0 auto; padding: 20px; }
-            h1 { color: #333; }
-            .card { background: #f9f9f9; border-radius: 8px; padding: 20px; margin-bottom: 20px; }
-            .success { color: green; }
-            .error { color: red; }
-          </style>
-        </head>
-        <body>
-          <h1>KingsBuilder API</h1>
-          <div class="card">
-            <h2>Status: <span class="success">Running</span></h2>
-            <p>The KingsBuilder API is running correctly.</p>
-            <p>Environment: ${process.env.NODE_ENV || 'development'}</p>
-            <p>Shopify API Key: ${process.env.SHOPIFY_API_KEY ? '<span class="success">Configured</span>' : '<span class="error">Missing</span>'}</p>
-            <p>Shopify API Secret: ${process.env.SHOPIFY_API_SECRET ? '<span class="success">Configured</span>' : '<span class="error">Missing</span>'}</p>
-            <p>Shop: ${shop || 'Not specified'}</p>
-            <p>Host: ${host || 'Not specified'}</p>
-          </div>
-          <div class="card">
-            <h2>Available Endpoints</h2>
-            <ul>
-              <li><a href="/api/health">/api/health</a> - Health check endpoint</li>
-              <li><a href="/api/pages">/api/pages</a> - Get all pages</li>
-              <li><a href="/editor">/editor</a> - Page Builder Editor</li>
-            </ul>
-          </div>
-        </body>
-      </html>
-    `);
-  }
-  
-  // Not a Shopify request, try to serve the index.html file
-  res.sendFile(path.join(__dirname, '../public/index.html'));
-});
-
-// API Routes
-app.get('/api/analytics', (req, res) => {
-  res.json({
-    totalViews: 2847,
-    uniqueVisitors: 1923,
-    bounceRate: 34.2,
-    avgTimeOnPage: 145,
-    topPages: [
-      { title: 'Home Page', handle: 'home', views: 1234 },
-      { title: 'About Us', handle: 'about', views: 892 },
-      { title: 'Contact', handle: 'contact', views: 456 }
-    ]
-  });
-});
-
-app.get('/api/pages', async (req, res) => {
-  try {
-    // Get shop from query parameter, header, or cookie
-    const shop = req.query.shop || req.headers['x-shopify-shop-domain'] || (req.cookies && req.cookies.shopOrigin);
-    
-    // For debugging purposes
-    console.log('GET /api/pages request:');
-    console.log('- Shop:', shop);
-    console.log('- ENV variables:', {
-      SHOPIFY_API_VERSION: process.env.SHOPIFY_API_VERSION,
-      SHOPIFY_API_KEY: process.env.SHOPIFY_API_KEY,
-      SHOPIFY_ADMIN_API_ACCESS_TOKEN: !!process.env.SHOPIFY_ADMIN_API_ACCESS_TOKEN,
-      SHOPIFY_API_PASSWORD: !!process.env.SHOPIFY_API_PASSWORD
-    });
-    
-    if (!shop) {
-      return res.status(400).json({ 
-        success: false,
-        message: 'Shop parameter is required' 
-      });
-    }
-    
-    const pageId = req.query.id;
-    
-    // Get access token from environment variables
-    const accessToken = process.env.SHOPIFY_ADMIN_API_ACCESS_TOKEN || process.env.SHOPIFY_API_PASSWORD;
-    
-    if (!accessToken) {
-      console.log('No Shopify access token found. Using mock data.');
-      if (pageId) {
-        return res.json({
-          success: true,
-          page: {
-            id: pageId,
-            title: 'Sample Page ' + pageId,
-            body_html: '<p>This is a sample page for testing</p>',
-            handle: 'sample-page-' + pageId,
-            published: true
-          }
-        });
-      } else {
-        return res.json({
-          success: true,
-          pages: [
-            { id: '1', title: 'Homepage', body_html: '<p>Welcome to our store</p>', handle: 'home', published: true },
-            { id: '2', title: 'About Us', body_html: '<p>Our company story</p>', handle: 'about', published: true },
-            { id: '3', title: 'Contact', body_html: '<p>Get in touch</p>', handle: 'contact', published: true }
-          ]
-        });
-      }
-    }
-    
-    // Using actual Shopify API call
-    console.log('Using real Shopify data');
-    
-    if (pageId) {
-      // Get a single page
-      console.log(`Getting page ${pageId} from Shopify...`);
-      console.log('Shop:', shop);
-      
-      const result = await shopifyApi.getShopifyPageById(shop, accessToken, pageId);
-      return res.json({
-        success: true,
-        page: result.page
-      });
-    } else {
-      // Get all pages
-      console.log('Getting all pages from Shopify...');
-      
-      const result = await shopifyApi.getShopifyPages(shop, accessToken);
-      return res.json({
-        success: true,
-        pages: result.pages || []
-      });
-    }
-  } catch (error) {
-    console.error('Error getting pages:', error);
-    res.status(500).json({ 
-      success: false, 
-      message: 'Failed to get pages',
-      error: error.message 
-    });
-  }
-});
-
-app.get('/api/templates', (req, res) => {
-  res.json([
-    { id: 'landing', name: 'Landing Page', description: 'Perfect for product launches', category: 'Marketing' },
-    { id: 'about', name: 'About Us', description: 'Tell your brand story', category: 'Company' },
-    { id: 'contact', name: 'Contact Page', description: 'Get in touch form', category: 'Support' }
-  ]);
-});
-
-// POST endpoint for creating pages
-app.post('/api/pages', async (req, res) => {
-  try {
-    const { title, handle, template, content } = req.body;
-    const shop = req.headers['x-shopify-shop-domain'] || req.query.shop || 'kingsbuilder.myshopify.com';
-    
-    // Use fixed access token from environment variables
-    const accessToken = process.env.SHOPIFY_ADMIN_API_ACCESS_TOKEN || process.env.SHOPIFY_API_PASSWORD;
-    
-    if (!title) {
-      return res.status(400).json({ 
-        success: false,
-        message: 'Title is required'
-      });
-    }
-    
-    // If handle is not provided, generate it from title
-    const pageHandle = handle || title.toLowerCase().replace(/[^a-z0-9]+/g, '-');
-    
-    console.log('Creating page...');
-    console.log('Shop:', shop);
-    console.log('Title:', title);
-    console.log('Handle:', pageHandle);
-    
-    // Create the page in Shopify
-    const result = await shopifyApi.createShopifyPage(shop, accessToken, {
-      title,
-      handle: pageHandle,
-      body_html: content || `<div>This is a page created with KingsBuilder</div>`,
-      published: false
-    });
-    
-    console.log('Shopify page created successfully:', result);
-    
-    res.status(201).json({ 
-      success: true, 
-      message: 'Page created successfully in Shopify',
-      page: result.page 
-    });
-  } catch (error) {
-    console.error('Error creating page:', error);
-    console.error('Error details:', error.response ? error.response.data : 'No response data');
-    
-    res.status(500).json({ 
-      success: false, 
-      message: 'Failed to create page: ' + error.message,
-      error: error.response ? error.response.data : error.message
-    });
-  }
-});
-
-// PUT endpoint for updating pages
-app.put('/api/pages/:id', async (req, res) => {
-  try {
-    const { id } = req.params;
-    const { title, handle, content, published } = req.body;
-    const shop = req.headers['x-shopify-shop-domain'];
-    const accessToken = req.headers['x-shopify-access-token'];
-    
-    if (!shop || !accessToken) {
-      return res.status(401).json({ error: 'Shop domain and access token are required' });
-    }
-    
-    console.log(`Updating page ${id} in Shopify...`);
-    console.log('Shop:', shop);
-    console.log('Content length:', content ? content.length : 0);
-    
-    // Update the page in Shopify
-    const result = await shopifyApi.updateShopifyPage(shop, accessToken, id, {
-      title: title || 'Updated Page',
-      handle: handle || `updated-page-${id}`,
-      content: content || '',
-      published: published === true
-    });
-    
-    res.json({ 
-      success: true, 
-      message: 'Page updated successfully in Shopify',
-      page: result.page 
-    });
-  } catch (error) {
-    console.error('Error updating page:', error);
-    res.status(500).json({ 
-      success: false, 
-      message: 'Failed to update page',
-      error: error.message 
-    });
-  }
-});
-
-// DELETE endpoint for deleting pages
-app.delete('/api/pages/:id', async (req, res) => {
-  try {
-    const { id } = req.params;
-    const shop = req.headers['x-shopify-shop-domain'];
-    const accessToken = req.headers['x-shopify-access-token'];
-    
-    if (!shop || !accessToken) {
-      return res.status(401).json({ error: 'Shop domain and access token are required' });
-    }
-    
-    console.log(`Deleting page ${id} from Shopify...`);
-    console.log('Shop:', shop);
-    
-    // Delete the page from Shopify
-    await shopifyApi.deleteShopifyPage(shop, accessToken, id);
-    
-    res.json({ 
-      success: true, 
-      message: `Page ${id} deleted successfully from Shopify` 
-    });
-  } catch (error) {
-    console.error('Error deleting page:', error);
-    res.status(500).json({ 
-      success: false, 
-      message: 'Failed to delete page',
-      error: error.message 
-    });
-  }
-});
-
-// Import and use routers with error handling
-let builderRouter, pagesRouter, dashboardRouter, authRouter, appRouter, shopifyBridgeRouter;
-
-try {
-  appRouter = require('./routes/app');
-  app.use('/app', appRouter);
-  console.log('App router loaded successfully');
-} catch (error) {
-  console.error('Error loading app router:', error);
-  // Provide a fallback router
-  app.use('/app', (req, res) => {
-    res.send(`
-      <!DOCTYPE html>
-      <html>
-        <head>
-          <title>KingsBuilder - Error</title>
-          <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        </head>
-        <body>
-          <h1>KingsBuilder</h1>
-          <p>Sorry, there was an error loading the app. Please try again later.</p>
-          <p>Error: ${error.message}</p>
-        </body>
-      </html>
-    `);
-  });
-}
-
-try {
-  builderRouter = require('./builder');
-  app.use('/builder', builderRouter);
-} catch (error) {
-  console.error('Error loading builder router:', error);
-  app.use('/builder', (req, res) => res.status(500).send('Builder temporarily unavailable'));
-}
-
-try {
-  pagesRouter = require('./routes/pages');
-  app.use('/api/pages', pagesRouter);
-} catch (error) {
-  console.error('Error loading pages router:', error);
-}
-
-try {
-  dashboardRouter = require('./routes/dashboard');
-  app.use('/dashboard', dashboardRouter);
-} catch (error) {
-  console.error('Error loading dashboard router:', error);
-  app.use('/dashboard', (req, res) => res.redirect('/app?shop=' + (req.query.shop || '')));
-}
-
-try {
-  authRouter = require('./auth');
-  app.use('/api/auth', authRouter);
-} catch (error) {
-  console.error('Error loading auth router:', error);
-}
-
-// Load the Shopify bridge router for connecting to Shopify Admin API
-try {
-  shopifyBridgeRouter = require('./shopify-bridge');
-  app.use('/api/shopify', shopifyBridgeRouter);
-  console.log('Shopify bridge router loaded successfully');
-} catch (error) {
-  console.error('Error loading Shopify bridge router:', error);
-}
-
-// Redirect root to install or dashboard
-app.get('/', (req, res) => {
   const shop = req.query.shop || req.cookies?.shopOrigin;
-  
+
   if (shop) {
     // If we have a shop parameter, go to dashboard
     res.redirect('/dashboard?shop=' + shop);
   } else {
-    // Otherwise go to install page
-    res.redirect('/install');
+    // Otherwise go to landing page
+    res.redirect('/landing');
   }
 });
 
@@ -496,4 +152,102 @@ app.get('/builder-old/:pageId', (req, res) => {
 // Export for Vercel
 module.exports = app;
 
+
+
+
+
+
+// Landing page route
+app.get('/landing', (req, res) => {
+  res.send(`<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>KingsBuilder - Premium Shopify Page Builder</title>
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      background-color: #0A0A0A;
+      color: #FFFFFF;
+      margin: 0;
+      padding: 0;
+      line-height: 1.6;
+    }
+    .hero {
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+      text-align: center;
+    }
+    .hero-content {
+      max-width: 800px;
+    }
+    .hero-title {
+      font-size: 48px;
+      font-weight: 700;
+      margin-bottom: 20px;
+    }
+    .hero-subtitle {
+      font-size: 24px;
+      color: #AAAAAA;
+      margin-bottom: 40px;
+    }
+    .cta-buttons {
+      display: flex;
+      gap: 20px;
+      justify-content: center;
+    }
+    .button {
+      display: inline-block;
+      padding: 16px 32px;
+      background-color: #222222;
+      color: white;
+      text-decoration: none;
+      border-radius: 8px;
+      font-size: 18px;
+      font-weight: 500;
+      transition: all 0.3s ease;
+    }
+    .button:hover {
+      background-color: #333333;
+      transform: translateY(-5px);
+    }
+    .button-outline {
+      background-color: transparent;
+      border: 2px solid #FFFFFF;
+    }
+    .button-outline:hover {
+      background-color: #FFFFFF;
+      color: #000000;
+    }
+    @media (max-width: 768px) {
+      .hero-title {
+        font-size: 36px;
+      }
+      .hero-subtitle {
+        font-size: 18px;
+      }
+      .cta-buttons {
+        flex-direction: column;
+      }
+    }
+  </style>
+</head>
+<body>
+  <section class="hero">
+    <div class="hero-content">
+      <h1 class="hero-title">KingsBuilder</h1>
+      <p class="hero-subtitle">Welcome to KingsBuilder - The Ultimate Page Builder for Shopify. Create beautiful, customized pages for your Shopify store without writing any code.</p>
+      <div class="cta-buttons">
+        <a href="https://apps.shopify.com/kingsbuilder" class="button">Open in Shopify</a>
+        <a href="/install" class="button button-outline">Get Started</a>
+      </div>
+    </div>
+  </section>
+</body>
+</html>`);
+});
 
