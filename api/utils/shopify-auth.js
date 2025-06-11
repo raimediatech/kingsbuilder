@@ -7,8 +7,8 @@ const cookieParser = require('cookie-parser');
 
 // Environment variables
 const SHOPIFY_API_VERSION = process.env.SHOPIFY_API_VERSION || '2023-10';
-const SHOPIFY_API_KEY = process.env.SHOPIFY_API_KEY || '128d69fb5441ba3eda3ae4694c71b175';
-const SHOPIFY_API_SECRET = process.env.SHOPIFY_API_SECRET;
+const SHOPIFY_API_KEY = process.env.SHOPIFY_API_KEY || process.env.SHOPIFY_CUSTOM_APP_API_KEY || '128d69fb5441ba3eda3ae4694c71b175';
+const SHOPIFY_API_SECRET = process.env.SHOPIFY_API_SECRET || process.env.SHOPIFY_CUSTOM_APP_SECRET;
 const SHOPIFY_ADMIN_API_ACCESS_TOKEN = process.env.SHOPIFY_ADMIN_API_ACCESS_TOKEN;
 
 // In-memory token storage for development
