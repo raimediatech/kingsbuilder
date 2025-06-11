@@ -396,7 +396,7 @@ app.delete('/api/pages/:id', async (req, res) => {
 });
 
 // Import and use routers with error handling
-let builderRouter, pagesRouter, dashboardRouter, authRouter, appRouter;
+let builderRouter, pagesRouter, dashboardRouter, authRouter, appRouter, shopifyBridgeRouter;
 
 try {
   appRouter = require('./routes/app');
@@ -424,7 +424,7 @@ try {
 }
 
 try {
-  builderRouter = require('./builder_simple');
+  builderRouter = require('./builder');
   app.use('/builder', builderRouter);
 } catch (error) {
   console.error('Error loading builder router:', error);
@@ -451,6 +451,15 @@ try {
   app.use('/api/auth', authRouter);
 } catch (error) {
   console.error('Error loading auth router:', error);
+}
+
+// Load the Shopify bridge router for connecting to Shopify Admin API
+try {
+  shopifyBridgeRouter = require('./shopify-bridge');
+  app.use('/api/shopify', shopifyBridgeRouter);
+  console.log('Shopify bridge router loaded successfully');
+} catch (error) {
+  console.error('Error loading Shopify bridge router:', error);
 }
 
 // Redirect root to install or dashboard
