@@ -4,9 +4,6 @@ const cookieParser = require('cookie-parser');
 const path = require('path');
 const app = express();
 
-// Import Shopify API
-const shopifyApi = require('./shopify');
-
 // Load environment variables
 try {
   require('dotenv').config();
