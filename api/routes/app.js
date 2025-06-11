@@ -317,13 +317,13 @@ router.get('/', async (req, res) => {
                       result.pages.forEach(page => {
                         const pageCard = document.createElement('div');
                         pageCard.className = 'app-card';
-                        pageCard.innerHTML = \`
-                          <h3 class="card-title">\${page.title || 'Untitled Page'}</h3>
-                          <p>\${page.body_html ? page.body_html.replace(/<[^>]*>/g, ' ').substring(0, 100) + '...' : 'No content'}</p>
+                        pageCard.innerHTML = `
+                          <h3 class="card-title">${page.title || 'Untitled Page'}</h3>
+                          <p>${page.body_html ? page.body_html.replace(/<[^>]*>/g, ' ').substring(0, 100) + '...' : 'No content'}</p>
                           <div class="button-group">
-                            <a href="/builder/\${page.id}?shop=\${shopOrigin}" class="app-button">Edit Page</a>
+                            <a href="/builder/${page.id}?shop=${shopOrigin}" class="app-button">Edit Page</a>
                           </div>
-                        \`;
+                        `;
                         pagesContainer.appendChild(pageCard);
                       });
                     } else {
