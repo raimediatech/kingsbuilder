@@ -264,3 +264,4 @@ app.get('/app', (req, res) => {
     res.redirect('/install');
   }
 });
+
