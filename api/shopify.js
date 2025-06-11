@@ -13,7 +13,7 @@ try {
 
 const SHOPIFY_API_KEY = process.env.SHOPIFY_API_KEY || '128d69fb5441ba3eda3ae4694c71b175';
 const SHOPIFY_API_SECRET = process.env.SHOPIFY_API_SECRET;
-const SHOPIFY_API_VERSION = '2023-10';
+const SHOPIFY_API_VERSION = process.env.SHOPIFY_API_VERSION || '2023-10';
 
 /**
  * Create a new page in Shopify
@@ -136,23 +136,32 @@ async function getShopifyPages(shop, accessToken) {
  */
 async function getShopifyPageById(shop, accessToken, pageId) {
   try {
-    // If no access token provided, throw error
-    if (!accessToken) {
+    // Use environment token if not provided
+    const token = accessToken || process.env.SHOPIFY_ADMIN_API_ACCESS_TOKEN || process.env.SHOPIFY_API_PASSWORD;
+    
+    if (!token) {
       throw new Error('No access token available for this shop');
     }
+    
+    console.log(`Fetching page ${pageId} for shop: ${shop}`);
     
     const response = await axios({
       method: 'GET',
       url: `https://${shop}/admin/api/${SHOPIFY_API_VERSION}/pages/${pageId}.json`,
       headers: {
         'Content-Type': 'application/json',
-        'X-Shopify-Access-Token': accessToken
+        'X-Shopify-Access-Token': token
       }
     });
 
+    console.log('Successfully fetched page from Shopify Admin API');
     return response.data;
   } catch (error) {
     console.error('Error fetching Shopify page:', error.message);
+    if (error.response) {
+      console.error('Response status:', error.response.status);
+      console.error('Response data:', error.response.data);
+    }
     throw error;
   }
 }

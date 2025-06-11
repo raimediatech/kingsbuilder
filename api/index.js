@@ -79,6 +79,18 @@ app.use(cookieParser(process.env.SESSION_SECRET || 'kings-builder-session-secret
 app.use(verifyShopifyHmac);
 app.use(verifyShopifyJWT);
 
+// Custom auth middleware that checks for access tokens
+let verifyShopifyAuth;
+try {
+  const authUtils = require('./utils/shopify-auth');
+  verifyShopifyAuth = authUtils.verifyShopifyAuth;
+  app.use(verifyShopifyAuth);
+  console.log('Shopify auth utilities loaded successfully');
+} catch (error) {
+  console.error('Error loading Shopify auth utilities:', error);
+  verifyShopifyAuth = (req, res, next) => next();
+}
+
 // Configure cookies
 app.use((req, res, next) => {
   res.cookie('shopify_app_session', '', {

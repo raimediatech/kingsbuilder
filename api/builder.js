@@ -3,19 +3,21 @@ const express = require('express');
 const router = express.Router();
 const shopifyApi = require('./shopify');
 const { PageModel } = require('./database');
+const { getShopifyAuth, verifyShopifyAuth } = require('./utils/shopify-auth');
+const axios = require('axios');
+
+// Apply authentication middleware
+router.use(verifyShopifyAuth);
 
 // Get page builder for a specific page
 router.get('/:pageId', async (req, res) => {
   try {
     const { pageId } = req.params;
     
-    // Get shop from various possible sources
-    let shop = req.query.shop || req.shopifyShop || req.headers['x-shopify-shop-domain'] || req.cookies?.shopOrigin;
+    // Use our new auth utility to get credentials
+    const { shop, accessToken } = getShopifyAuth(req);
     
-    // Get access token from various possible sources
-    let accessToken = req.headers['x-shopify-access-token'] || req.shopifyAccessToken || req.cookies?.shopifyAccessToken;
-    
-    // Set security headers for Shopify iframe embedding
+    // Set security headers for Shopify iframe embedding - fixed to prevent sandbox blocking
     res.setHeader(
       "Content-Security-Policy",
       "frame-ancestors 'self' https://*.myshopify.com https://*.shopify.com; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.shopify.com;"
@@ -24,44 +26,82 @@ router.get('/:pageId', async (req, res) => {
     // Allow scripts to run in iframe
     res.setHeader("X-Frame-Options", "ALLOW-FROM https://*.myshopify.com https://*.shopify.com");
     
+    // Add specific headers to prevent sandbox issues
+    res.setHeader("X-XSS-Protection", "0");
+    res.setHeader("Access-Control-Allow-Origin", "*");
+    
     console.log(`Loading page builder for page ID: ${pageId} from shop: ${shop}`);
     
-    // Try to fetch the real page data from Shopify API using our new bridge
+    // Try to fetch the real page data from Shopify API
     let pageData = null;
     if (shop && accessToken) {
       try {
-        // First try using our new shopify-bridge API
-        const apiResult = await fetch(`/api/shopify/pages/${pageId}`, {
-          headers: {
-            'X-Shopify-Shop-Domain': shop,
-            'X-Shopify-Access-Token': accessToken
-          }
-        });
+        console.log(`Trying to fetch page ${pageId} from Shopify for shop ${shop}...`);
         
-        if (apiResult.ok) {
-          const data = await apiResult.json();
-          if (data.success && data.page) {
-            pageData = data.page;
-            console.log('Successfully fetched page data from Shopify via API bridge');
-          }
-        } else {
-          console.log('Failed to fetch from API bridge, falling back to direct method');
-        }
-        
-        // Fallback to direct method if bridge fails
-        if (!pageData) {
+        // Direct method to Shopify Admin API
+        try {
           const result = await shopifyApi.getShopifyPageById(shop, accessToken, pageId);
           if (result && result.page) {
             pageData = result.page;
-            console.log('Successfully fetched page data from Shopify via direct API');
+            console.log('Successfully fetched page data from Shopify Admin API');
+          }
+        } catch (directError) {
+          console.error('Error fetching from Shopify direct API:', directError.message);
+          
+          // Try GraphQL API via axios as a fallback
+          try {
+            const graphqlEndpoint = `https://${shop}/admin/api/2023-10/graphql.json`;
+            const graphqlQuery = {
+              query: `
+                query {
+                  page(id: "gid://shopify/Page/${pageId}") {
+                    id
+                    title
+                    handle
+                    bodySummary
+                    body
+                    createdAt
+                    updatedAt
+                  }
+                }
+              `
+            };
+            
+            const response = await axios({
+              url: graphqlEndpoint,
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                'X-Shopify-Access-Token': accessToken
+              },
+              data: graphqlQuery
+            });
+            
+            if (response.data && response.data.data && response.data.data.page) {
+              // Convert GraphQL response to our expected format
+              pageData = {
+                id: pageId,
+                title: response.data.data.page.title,
+                handle: response.data.data.page.handle,
+                body_html: response.data.data.page.body,
+                published: true,
+                created_at: response.data.data.page.createdAt,
+                updated_at: response.data.data.page.updatedAt
+              };
+              console.log('Successfully fetched page data from Shopify GraphQL API');
+            }
+          } catch (graphqlError) {
+            console.error('Error fetching from Shopify GraphQL API:', graphqlError.message);
           }
         }
       } catch (error) {
-        console.error('Error fetching page from Shopify:', error.message);
+        console.error('All Shopify API methods failed:', error.message);
         // Continue with database or default data
       }
     } else {
       console.log('No shop or access token available, will use database or default data');
+      console.log('Shop:', shop);
+      console.log('Has access token:', !!accessToken);
     }
     
     // If no data from Shopify API, try to get from database
@@ -374,11 +414,19 @@ router.get('/:pageId', async (req, res) => {
             // Function to save page content back to Shopify
             async function savePage(content) {
               try {
-                const response = await fetch('/api/pages/' + window.pageId, {
+                // Get tokens from local storage or window variables
+                const shopDomain = window.shopOrigin || localStorage.getItem('shopifyShop');
+                const accessToken = localStorage.getItem('shopifyToken');
+                
+                console.log('Saving page with shop:', shopDomain);
+                console.log('Has access token:', !!accessToken);
+                
+                const response = await fetch('/api/shopify/pages/' + window.pageId, {
                   method: 'PUT',
                   headers: {
                     'Content-Type': 'application/json',
-                    'X-Shopify-Shop-Domain': window.shopOrigin
+                    'X-Shopify-Shop-Domain': shopDomain,
+                    'X-Shopify-Access-Token': accessToken
                   },
                   body: JSON.stringify({
                     content: content,
@@ -392,8 +440,29 @@ router.get('/:pageId', async (req, res) => {
                   showNotification('Page saved successfully!', 'success');
                   return true;
                 } else {
-                  showNotification('Error saving page: ' + result.message, 'error');
-                  return false;
+                  // Fallback to the original API endpoint
+                  const fallbackResponse = await fetch('/api/pages/' + window.pageId, {
+                    method: 'PUT',
+                    headers: {
+                      'Content-Type': 'application/json',
+                      'X-Shopify-Shop-Domain': shopDomain,
+                      'X-Shopify-Access-Token': accessToken
+                    },
+                    body: JSON.stringify({
+                      content: content,
+                      title: window.pageData.title,
+                      handle: window.pageData.handle
+                    })
+                  });
+                  
+                  const fallbackResult = await fallbackResponse.json();
+                  if (fallbackResult.success) {
+                    showNotification('Page saved successfully!', 'success');
+                    return true;
+                  } else {
+                    showNotification('Error saving page: ' + (fallbackResult.message || result.message), 'error');
+                    return false;
+                  }
                 }
               } catch (error) {
                 console.error('Error saving page:', error);
