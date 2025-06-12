@@ -10,7 +10,31 @@
       "use": "@vercel/static"
     }
   ],
-  "routes": [\r\n    {\r\n      "src": "/pages",\r\n      "dest": "/api/index.js"\r\n    },\r\n    {\r\n      "src": "/pages/(.*)",\r\n      "dest": "/api/index.js"\r\n    },\r\n    {\r\n      "src": "/dashboard",\r\n      "dest": "/api/index.js"\r\n    },\r\n    {\r\n      "src": "/dashboard/(.*)",\r\n      "dest": "/api/index.js"\r\n    },\r\n    {\r\n      "src": "/dashboard-modern",\r\n      "dest": "/api/index.js"\r\n    },\r\n    {\r\n      "src": "/dashboard-modern/(.*)",\r\n      "dest": "/api/index.js"\r\n    },
+  "routes": [
+    {
+      "src": "/pages",
+      "dest": "/api/index.js"
+    },
+    {
+      "src": "/pages/(.*)",
+      "dest": "/api/index.js"
+    },
+    {
+      "src": "/dashboard",
+      "dest": "/api/index.js"
+    },
+    {
+      "src": "/dashboard/(.*)",
+      "dest": "/api/index.js"
+    },
+    {
+      "src": "/dashboard-modern",
+      "dest": "/api/index.js"
+    },
+    {
+      "src": "/dashboard-modern/(.*)",
+      "dest": "/api/index.js"
+    },
     {
       "src": "/api/health",
       "dest": "/api/index.js"
@@ -60,5 +84,3 @@
     "COOKIE_SAME_SITE": "none"
   }
 }
-
-
