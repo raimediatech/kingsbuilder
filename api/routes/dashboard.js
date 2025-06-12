@@ -78,7 +78,7 @@ router.get('/', async (req, res) => {
                 // Generate a handle from the title
                 const handle = title.toLowerCase().replace(/[^a-z0-9]+/g, '-');
                 
-                const response = await fetch('/api/pages', {
+                const response = await fetch('/pages', {
                   method: 'POST',
                   headers: {
                     'Content-Type': 'application/json',
@@ -114,7 +114,7 @@ router.get('/', async (req, res) => {
               }
               
               try {
-                const response = await fetch('/api/pages/' + pageId, {
+                const response = await fetch('/pages/' + pageId, {
                   method: 'DELETE',
                   headers: {
                     'Content-Type': 'application/json',
