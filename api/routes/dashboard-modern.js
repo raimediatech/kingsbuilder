@@ -546,7 +546,7 @@ router.get('/', async (req, res) => {
           // Delete page functionality
           function deletePage(pageId) {
             if (confirm('Are you sure you want to delete this page? This action cannot be undone.')) {
-              fetch(\`/api/pages/\${pageId}\`, {
+              fetch(\`/pages/\${pageId}\`, {
                 method: 'DELETE',
                 headers: {
                   'Content-Type': 'application/json'
@@ -582,5 +582,6 @@ router.get('/', async (req, res) => {
 });
 
 module.exports = router;
+
 
 
