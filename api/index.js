@@ -139,7 +139,7 @@ app.get('/builder-old/:pageId', (req, res) => {
 });
 
 // Export for Vercel
-module.exports = app;
+// Start the server\r\nconst PORT = process.env.PORT || 3000;\r\nif (require.main === module) {\r\n  app.listen(PORT, () => {\r\n    console.log(Server running on port );\r\n  });\r\n}\r\n\r\nmodule.exports = app;
 
 
 
@@ -253,6 +253,8 @@ app.get('/app', (req, res) => {
     res.redirect('/install');
   }
 });
+
+
 
 
 
