@@ -131,20 +131,51 @@ app.get('/api/health', (req, res) => {
 // Serve static files from the public directory
 app.use(express.static(path.join(__dirname, '../public')));
 
-// Import dashboard routes\r\ntry {\r\n  const dashboardRoutes = require('./routes/dashboard');\r\n  app.use('/dashboard', dashboardRoutes);\r\n  console.log('Dashboard routes registered successfully - using original dashboard.js');\r\n} catch (error) {\r\n  console.error('Error loading dashboard routes:', error);\r\n}\r\n\r\ntry {\r\n  const dashboardModernRoutes = require('./routes/dashboard-modern');\r\n  app.use('/dashboard-modern', dashboardModernRoutes);\r\n  console.log('Modern dashboard routes registered successfully');\r\n} catch (error) {\r\n  console.error('Error loading modern dashboard routes:', error);\r\n}\r\n\r\n// Register builder routes\r\napp.get('/builder/:pageId', (req, res) => {\r\n  const { pageId } = req.params;\r\n  const shop = req.query.shop || req.cookies?.shopOrigin;\r\n  \r\n  if (!shop) {\r\n    return res.status(400).send('Shop parameter is required');\r\n  }\r\n  \r\n  // Serve the builder.js file as a route handler\r\n  try {\r\n    const builderHandler = require('./builder.js');\r\n    builderHandler(req, res);\r\n  } catch (error) {\r\n    console.error('Error loading builder handler:', error);\r\n    res.status(500).send('Error loading builder');\r\n  }\r\n});\r\n\r\n// Import pages routes\r\ntry {\r\n  const pagesRoutes = require('./routes/pages');\r\n  app.use('/pages', pagesRoutes);\r\n  app.use('/api/pages', pagesRoutes); // For backward compatibility\r\n  console.log('Pages routes registered successfully');\r\n} catch (error) {\r\n  console.error('Error loading pages routes:', error);\r\n}\r\n\r\n// Root route - serve index.html if it exists, otherwise show API status\r\napp.get('/', (req, res) => {\r\n  const shop = req.query.shop || req.cookies?.shopOrigin;\r\n\r\n  if (shop) {\r\n    // If we have a shop parameter, go to dashboard\r\n    res.redirect('/dashboard?shop=' + shop);\r\n  } else {\r\n    // Otherwise go to landing page\r\n    res.redirect('/landing');\r\n  }\r\n});
+// Import dashboard routes
+try {
+  const dashboardRoutes = require('./routes/dashboard');
+  app.use('/dashboard', dashboardRoutes);
+  console.log('Dashboard routes registered successfully - using original dashboard.js');
+} catch (error) {
+  console.error('Error loading dashboard routes:', error);
+}
 
-// This is a fallback for the old builder route
-app.get('/builder-old/:pageId', (req, res) => {
-  res.redirect(`/builder/${req.params.pageId}?shop=${req.query.shop || ''}`);
+try {
+  const dashboardModernRoutes = require('./routes/dashboard-modern');
+  app.use('/dashboard-modern', dashboardModernRoutes);
+  console.log('Modern dashboard routes registered successfully');
+} catch (error) {
+  console.error('Error loading modern dashboard routes:', error);
+}
+
+// Register builder routes
+app.get('/builder/:pageId', (req, res) => {
+  const { pageId } = req.params;
+  const shop = req.query.shop || req.cookies?.shopOrigin;
+  
+  if (!shop) {
+    return res.status(400).send('Shop parameter is required');
+  }
+  
+  // Serve the builder.js file as a route handler
+  try {
+    const builderHandler = require('./builder.js');
+    builderHandler(req, res);
+  } catch (error) {
+    console.error('Error loading builder handler:', error);
+    res.status(500).send('Error loading builder');
+  }
 });
 
-// Export for Vercel
-// Start the server\r\nconst PORT = process.env.PORT || 3000;\r\nif (require.main === module) {\r\n  app.listen(PORT, () => {\r\n    console.log(Server running on port );\r\n  });\r\n}\r\n\r\nmodule.exports = app;
-
-
-
-
-
+// Import pages routes
+try {
+  const pagesRoutes = require('./routes/pages');
+  app.use('/pages', pagesRoutes);
+  app.use('/api/pages', pagesRoutes); // For backward compatibility
+  console.log('Pages routes registered successfully');
+} catch (error) {
+  console.error('Error loading pages routes:', error);
+}
 
 // Landing page route
 app.get('/landing', (req, res) => {
@@ -240,7 +271,6 @@ app.get('/landing', (req, res) => {
 </html>`);
 });
 
-
 // App route for Shopify admin
 app.get('/app', (req, res) => {
   const shop = req.query.shop || req.cookies?.shopOrigin;
@@ -254,18 +284,31 @@ app.get('/app', (req, res) => {
   }
 });
 
+// Root route - serve index.html if it exists, otherwise show API status
+app.get('/', (req, res) => {
+  const shop = req.query.shop || req.cookies?.shopOrigin;
 
+  if (shop) {
+    // If we have a shop parameter, go to dashboard
+    res.redirect('/dashboard?shop=' + shop);
+  } else {
+    // Otherwise go to landing page
+    res.redirect('/landing');
+  }
+});
 
+// This is a fallback for the old builder route
+app.get('/builder-old/:pageId', (req, res) => {
+  res.redirect(`/builder/${req.params.pageId}?shop=${req.query.shop || ''}`);
+});
 
+// Export for Vercel
+// Start the server
+const PORT = process.env.PORT || 3000;
+if (require.main === module) {
+  app.listen(PORT, () => {
+    console.log(`Server running on port ${PORT}`);
+  });
+}
 
-
-
-
-
-
-
-
-
-
-
-
+module.exports = app;
