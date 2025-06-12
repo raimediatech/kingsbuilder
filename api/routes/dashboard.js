@@ -1,10 +1,8 @@
-// api/routes/dashboard.js - Dashboard routes
+// api/routes/dashboard-modern.js - Modern Dashboard routes
 const express = require('express');
 const router = express.Router();
 const shopifyApi = require('../shopify');
 const { PageModel } = require('../database');
-// Temporarily comment out to fix startup issue
-// const { getAccessToken } = require('../utils/session');
 
 // Dashboard home page
 router.get('/', async (req, res) => {
@@ -14,327 +12,576 @@ router.get('/', async (req, res) => {
     
     // Get access token from various possible sources
     const accessToken = req.headers['x-shopify-access-token'] || req.shopifyAccessToken || req.cookies?.shopifyAccessToken;
-    
+
     // Set security headers for Shopify iframe embedding
     res.setHeader(
       "Content-Security-Policy",
       "frame-ancestors 'self' https://*.myshopify.com https://*.shopify.com; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.shopify.com;"
     );
-    
+
     // Remove X-Frame-Options as it's deprecated and causing issues
     res.removeHeader('X-Frame-Options');
-    
+
     // Get pages from Shopify or database
     let pages = [];
-    
+
     if (shop && accessToken) {
       try {
         const result = await shopifyApi.getShopifyPages(shop, accessToken);
-        if (result && result.pages) {
-          pages = result.pages;
-          console.log(`Retrieved ${pages.length} pages from Shopify`);
-        }
+        pages = result.pages || [];
+        console.log(`Retrieved ${pages.length} pages from Shopify`);
       } catch (error) {
-        console.error('Error fetching pages from Shopify:', error.message);
-        // Continue with database or empty list
-      }
-    }
-    
-    // If no pages from Shopify, try database
-    if (pages.length === 0 && shop) {
-      try {
-        pages = await PageModel.findByShop(shop);
+        console.error('Error fetching pages from Shopify:', error);
+        // Fall back to database
+        const dbPages = await PageModel.find({ shop });
+        pages = dbPages.map(page => ({
+          id: page.pageId,
+          title: page.title,
+          handle: page.handle,
+          body_html: page.bodyHtml,
+          published: page.published
+        }));
         console.log(`Retrieved ${pages.length} pages from database`);
-      } catch (dbError) {
-        console.error('Error fetching pages from database:', dbError.message);
       }
+    } else {
+      console.log('No shop or access token available, using mock data');
+      pages = [
+        { id: '1', title: 'Homepage', body_html: '<p>Welcome to our store</p>', handle: 'home', published: true },
+        { id: '2', title: 'About Us', body_html: '<p>Our company story</p>', handle: 'about', published: true },
+        { id: '3', title: 'Contact', body_html: '<p>Get in touch</p>', handle: 'contact', published: true }
+      ];
     }
-    
-    // Render the dashboard HTML
+
+    // Render the dashboard
     res.send(`
       <!DOCTYPE html>
-      <html>
-        <head>
-          <title>KingsBuilder - Dashboard</title>
-          <meta name="viewport" content="width=device-width, initial-scale=1.0">
-          <meta http-equiv="Content-Security-Policy" content="frame-ancestors 'self' https://*.myshopify.com https://*.shopify.com; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.shopify.com;">
-          <meta name="apple-mobile-web-app-capable" content="yes">
-          <meta name="mobile-web-app-capable" content="yes">
+      <html lang="en">
+      <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>KingsBuilder Dashboard</title>
+        <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+        <style>
+          :root {
+            --primary-color: #000000;
+            --primary-hover: #333333;
+            --text-color: #333333;
+            --bg-color: #ffffff;
+            --card-bg: #f9f9f9;
+            --border-color: #e5e5e5;
+            --success-color: #10b981;
+            --warning-color: #f59e0b;
+            --danger-color: #ef4444;
+          }
           
-          <script>
-            // Store shop info
-            window.shopOrigin = "${shop || ''}";
-            
-            // Function to create a new page
-            async function createNewPage() {
-              try {
-                const title = document.getElementById('new-page-title').value;
-                
-                if (!title) {
-                  showNotification('Please enter a page title', 'error');
-                  return;
-                }
-                
-                // Generate a handle from the title
-                const handle = title.toLowerCase().replace(/[^a-z0-9]+/g, '-');
-                
-                const response = await fetch('/pages', {
-                  method: 'POST',
-                  headers: {
-                    'Content-Type': 'application/json',
-                    'X-Shopify-Shop-Domain': window.shopOrigin
-                  },
-                  body: JSON.stringify({
-                    title: title,
-                    handle: handle,
-                    content: '<p>Start building your page content here.</p>'
-                  })
-                });
-                
-                const result = await response.json();
-                console.log('Create page response:', result);
-                
-                if (result.success) {
-                  showNotification('Page created successfully!', 'success');
-                  // Redirect to the builder for the new page
-                  window.location.href = '/builder/' + result.page.id + '?shop=' + window.shopOrigin;
-                } else {
-                  showNotification('Error creating page: ' + (result.message || 'Unknown error'), 'error');
-                }
-              } catch (error) {
-                console.error('Error creating page:', error);
-                showNotification('Failed to create page. Please try again.', 'error');
-              }
-            }
-            
-            // Function to delete a page
-            async function deletePage(pageId, pageTitle) {
-              if (!confirm('Are you sure you want to delete "' + pageTitle + '"? This action cannot be undone.')) {
-                return;
-              }
-              
-              try {
-                const response = await fetch('/pages/' + pageId, {
-                  method: 'DELETE',
-                  headers: {
-                    'Content-Type': 'application/json',
-                    'X-Shopify-Shop-Domain': window.shopOrigin
-                  }
-                });
-                
-                const result = await response.json();
-                if (result.success) {
-                  showNotification('Page deleted successfully!', 'success');
-                  // Remove the page from the list
-                  const pageElement = document.getElementById('page-' + pageId);
-                  if (pageElement) {
-                    pageElement.remove();
-                  }
-                } else {
-                  showNotification('Error deleting page: ' + result.message, 'error');
-                }
-              } catch (error) {
-                console.error('Error deleting page:', error);
-                showNotification('Failed to delete page. Please try again.', 'error');
-              }
-            }
-            
-            // Show notification
-            function showNotification(message, type = 'info') {
-              const notification = document.createElement('div');
-              notification.className = 'notification ' + type;
-              notification.textContent = message;
-              
-              document.body.appendChild(notification);
-              
-              setTimeout(() => {
-                notification.classList.add('show');
-              }, 10);
-              
-              setTimeout(() => {
-                notification.classList.remove('show');
-                setTimeout(() => {
-                  notification.remove();
-                }, 300);
-              }, 3000);
-            }
-          </script>
+          [data-theme="dark"] {
+            --primary-color: #000000;
+            --primary-hover: #333333;
+            --text-color: #e5e5e5;
+            --bg-color: #121212;
+            --card-bg: #1e1e1e;
+            --border-color: #333333;
+            --success-color: #10b981;
+            --warning-color: #f59e0b;
+            --danger-color: #ef4444;
+          }
           
-          <style>
-            * { box-sizing: border-box; }
-            body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; margin: 0; padding: 0; background: #f6f6f7; }
-            
-            .dashboard-container { max-width: 1200px; margin: 0 auto; padding: 40px 20px; }
-            
-            .dashboard-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px; }
-            .dashboard-title { margin: 0; font-size: 24px; font-weight: 600; color: #111827; }
-            
-            .create-page-btn { background: #6366f1; color: white; border: none; padding: 10px 20px; border-radius: 6px; cursor: pointer; font-size: 14px; font-weight: 500; display: flex; align-items: center; }
-            .create-page-btn:hover { background: #4f46e5; }
-            
-            .pages-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 20px; }
-            
-            .page-card { background: white; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); overflow: hidden; transition: all 0.2s; }
-            .page-card:hover { box-shadow: 0 4px 6px rgba(0,0,0,0.1); transform: translateY(-2px); }
-            
-            .page-header { padding: 20px; border-bottom: 1px solid #e1e3e5; }
-            .page-title { margin: 0; font-size: 18px; font-weight: 600; color: #111827; }
-            .page-meta { display: flex; justify-content: space-between; margin-top: 10px; }
-            .page-date { font-size: 12px; color: #6b7280; }
-            .page-status { font-size: 12px; padding: 2px 8px; border-radius: 12px; }
-            .page-status.published { background: #d1fae5; color: #065f46; }
-            .page-status.draft { background: #f3f4f6; color: #6b7280; }
-            
-            .page-content { padding: 20px; }
-            .page-preview { height: 100px; overflow: hidden; margin-bottom: 20px; color: #6b7280; font-size: 14px; }
-            
-            .page-actions { display: flex; gap: 10px; }
-            .page-action-btn { flex: 1; padding: 8px 0; text-align: center; border-radius: 6px; font-size: 14px; font-weight: 500; cursor: pointer; }
-            .page-action-btn.edit { background: #6366f1; color: white; }
-            .page-action-btn.delete { background: #fee2e2; color: #ef4444; }
-            .page-action-btn.edit:hover { background: #4f46e5; }
-            .page-action-btn.delete:hover { background: #fecaca; }
-            
-            .empty-state { text-align: center; padding: 60px 20px; background: white; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
-            .empty-state h2 { margin: 0 0 10px 0; font-size: 20px; font-weight: 600; color: #111827; }
-            .empty-state p { margin: 0 0 20px 0; color: #6b7280; }
-            
-            .create-page-form { margin-top: 30px; background: white; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); padding: 20px; }
-            .form-title { margin: 0 0 20px 0; font-size: 18px; font-weight: 600; color: #111827; }
-            .form-row { margin-bottom: 20px; }
-            .form-row label { display: block; margin-bottom: 6px; font-size: 14px; font-weight: 500; color: #374151; }
-            .form-row input { width: 100%; padding: 10px 12px; border: 1px solid #e1e3e5; border-radius: 6px; font-size: 14px; }
-            .form-row input:focus { outline: none; border-color: #6366f1; box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.2); }
-            .form-actions { display: flex; justify-content: flex-end; }
-            
-            .notification { position: fixed; bottom: 20px; right: 20px; padding: 12px 20px; border-radius: 6px; background: #1e1e2e; color: white; transform: translateY(100px); opacity: 0; transition: all 0.3s; z-index: 1000; }
-            .notification.show { transform: translateY(0); opacity: 1; }
-            .notification.success { background: #10b981; }
-            .notification.error { background: #ef4444; }
-            .notification.info { background: #3b82f6; }
-            
-            /* Modal */
-            .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1000; }
-            .modal.show { display: flex; justify-content: center; align-items: center; }
-            .modal-content { background: white; border-radius: 8px; width: 100%; max-width: 500px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
-            .modal-header { padding: 20px; border-bottom: 1px solid #e1e3e5; }
-            .modal-header h2 { margin: 0; font-size: 18px; font-weight: 600; color: #111827; }
-            .modal-body { padding: 20px; }
-            .modal-footer { padding: 20px; border-top: 1px solid #e1e3e5; display: flex; justify-content: flex-end; gap: 10px; }
-            .modal-btn { padding: 8px 16px; border-radius: 6px; font-size: 14px; font-weight: 500; cursor: pointer; }
-            .modal-btn.cancel { background: #f3f4f6; color: #374151; border: 1px solid #e1e3e5; }
-            .modal-btn.primary { background: #6366f1; color: white; border: none; }
-            .modal-btn.cancel:hover { background: #e5e7eb; }
-            .modal-btn.primary:hover { background: #4f46e5; }
-            
-            /* Responsive */
-            @media (max-width: 768px) {
-              .dashboard-header { flex-direction: column; align-items: flex-start; gap: 20px; }
-              .pages-grid { grid-template-columns: 1fr; }
+          * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+          }
+          
+          body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            transition: background-color 0.3s, color 0.3s;
+          }
+          
+          .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 20px;
+          }
+          
+          .dashboard {
+            display: grid;
+            grid-template-columns: 250px 1fr;
+            min-height: 100vh;
+          }
+          
+          .sidebar {
+            background-color: var(--card-bg);
+            border-right: 1px solid var(--border-color);
+            padding: 30px 0;
+            position: sticky;
+            top: 0;
+            height: 100vh;
+            overflow-y: auto;
+          }
+          
+          .logo {
+            padding: 0 20px 30px;
+            border-bottom: 1px solid var(--border-color);
+            margin-bottom: 20px;
+          }
+          
+          .logo h1 {
+            font-size: 24px;
+            font-weight: 700;
+            color: var(--primary-color);
+          }
+          
+          .nav-menu {
+            list-style: none;
+          }
+          
+          .nav-item {
+            margin-bottom: 5px;
+          }
+          
+          .nav-link {
+            display: flex;
+            align-items: center;
+            padding: 12px 20px;
+            color: var(--text-color);
+            text-decoration: none;
+            border-radius: 6px;
+            margin: 0 10px;
+            transition: all 0.2s;
+          }
+          
+          .nav-link:hover, .nav-link.active {
+            background-color: var(--primary-color);
+            color: white;
+          }
+          
+          .nav-link i {
+            margin-right: 10px;
+            width: 20px;
+            text-align: center;
+          }
+          
+          .main-content {
+            padding: 30px;
+          }
+          
+          .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+          }
+          
+          .header h2 {
+            font-size: 24px;
+            font-weight: 600;
+          }
+          
+          .theme-toggle {
+            background: none;
+            border: none;
+            color: var(--text-color);
+            font-size: 20px;
+            cursor: pointer;
+            padding: 5px;
+            margin-right: 15px;
+          }
+          
+          .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            padding: 10px 20px;
+            background-color: var(--primary-color);
+            color: white;
+            border: none;
+            border-radius: 6px;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: background-color 0.2s;
+            text-decoration: none;
+          }
+          
+          .btn:hover {
+            background-color: var(--primary-hover);
+          }
+          
+          .btn i {
+            margin-right: 8px;
+          }
+          
+          .btn-outline {
+            background-color: transparent;
+            border: 1px solid var(--primary-color);
+            color: var(--primary-color);
+          }
+          
+          .btn-outline:hover {
+            background-color: var(--primary-color);
+            color: white;
+          }
+          
+          .btn-success {
+            background-color: var(--success-color);
+          }
+          
+          .btn-warning {
+            background-color: var(--warning-color);
+          }
+          
+          .btn-danger {
+            background-color: var(--danger-color);
+          }
+          
+          .card {
+            background-color: var(--card-bg);
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+            padding: 25px;
+            margin-bottom: 30px;
+          }
+          
+          .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+          }
+          
+          .card-title {
+            font-size: 18px;
+            font-weight: 600;
+          }
+          
+          .search-box {
+            position: relative;
+            margin-bottom: 20px;
+          }
+          
+          .search-box input {
+            width: 100%;
+            padding: 12px 20px;
+            padding-left: 40px;
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            font-size: 14px;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+          }
+          
+          .search-box i {
+            position: absolute;
+            left: 15px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #888;
+          }
+          
+          .table {
+            width: 100%;
+            border-collapse: collapse;
+          }
+          
+          .table th, .table td {
+            padding: 15px;
+            text-align: left;
+            border-bottom: 1px solid var(--border-color);
+          }
+          
+          .table th {
+            font-weight: 600;
+            color: var(--text-color);
+            background-color: var(--card-bg);
+          }
+          
+          .table tr:last-child td {
+            border-bottom: none;
+          }
+          
+          .table tr:hover td {
+            background-color: rgba(0, 0, 0, 0.02);
+          }
+          
+          .status {
+            display: inline-block;
+            padding: 5px 10px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 500;
+          }
+          
+          .status-published {
+            background-color: rgba(16, 185, 129, 0.1);
+            color: var(--success-color);
+          }
+          
+          .status-draft {
+            background-color: rgba(245, 158, 11, 0.1);
+            color: var(--warning-color);
+          }
+          
+          .actions {
+            display: flex;
+            gap: 10px;
+          }
+          
+          .action-btn {
+            background: none;
+            border: none;
+            color: var(--text-color);
+            cursor: pointer;
+            font-size: 16px;
+            transition: color 0.2s;
+          }
+          
+          .action-btn:hover {
+            color: var(--primary-color);
+          }
+          
+          .empty-state {
+            text-align: center;
+            padding: 50px 0;
+          }
+          
+          .empty-state i {
+            font-size: 50px;
+            color: #ccc;
+            margin-bottom: 20px;
+          }
+          
+          .empty-state h3 {
+            font-size: 20px;
+            margin-bottom: 10px;
+          }
+          
+          .empty-state p {
+            color: #888;
+            margin-bottom: 20px;
+          }
+          
+          @media (max-width: 768px) {
+            .dashboard {
+              grid-template-columns: 1fr;
             }
-          </style>
-        </head>
-        <body>
-          <div class="dashboard-container">
-            <div class="dashboard-header">
-              <h1 class="dashboard-title">KingsBuilder Dashboard</h1>
-              <button class="create-page-btn" onclick="document.getElementById('create-page-modal').classList.add('show')">+ Create New Page</button>
+            
+            .sidebar {
+              display: none;
+            }
+          }
+        </style>
+      </head>
+      <body>
+        <div class="dashboard">
+          <aside class="sidebar">
+            <div class="logo">
+              <h1>KingsBuilder</h1>
+            </div>
+            <ul class="nav-menu">
+              <li class="nav-item">
+                <a href="#" class="nav-link active">
+                  <i class="fas fa-home"></i>
+                  Dashboard
+                </a>
+              </li>
+              <li class="nav-item">
+                <a href="#" class="nav-link">
+                  <i class="fas fa-file"></i>
+                  Pages
+                </a>
+              </li>
+              <li class="nav-item">
+                <a href="#" class="nav-link">
+                  <i class="fas fa-palette"></i>
+                  Templates
+                </a>
+              </li>
+              <li class="nav-item">
+                <a href="#" class="nav-link">
+                  <i class="fas fa-cog"></i>
+                  Settings
+                </a>
+              </li>
+              <li class="nav-item">
+                <a href="#" class="nav-link">
+                  <i class="fas fa-question-circle"></i>
+                  Help
+                </a>
+              </li>
+            </ul>
+          </aside>
+          
+          <main class="main-content">
+            <div class="header">
+              <h2>Pages</h2>
+              <div style="display: flex; align-items: center;">
+                <button id="theme-toggle" class="theme-toggle">
+                  <i class="fas fa-moon"></i>
+                </button>
+                <a href="/pages/new?shop=${shop}" class="btn">
+                  <i class="fas fa-plus"></i>
+                  Create Page
+                </a>
+              </div>
             </div>
             
-            <div class="pages-grid">
-              ${pages.length > 0 ? pages.map(page => `
-                <div class="page-card" id="page-${page.id}">
-                  <div class="page-header">
-                    <h2 class="page-title">${page.title}</h2>
-                    <div class="page-meta">
-                      <span class="page-date">Updated: ${new Date(page.updated_at).toLocaleDateString()}</span>
-                      <span class="page-status ${page.published ? 'published' : 'draft'}">${page.published ? 'Published' : 'Draft'}</span>
-                    </div>
-                  </div>
-                  <div class="page-content">
-                    <div class="page-preview">
-                      ${page.body_html ? page.body_html.replace(/<[^>]*>/g, ' ').substring(0, 100) + '...' : 'No content'}
-                    </div>
-                    <div class="page-actions">
-                      <a href="/builder/${page.id}?shop=${shop}" class="page-action-btn edit">Edit</a>
-                      <button class="page-action-btn delete" onclick="deletePage('${page.id}', '${page.title.replace(/'/g, "\\'")}')">Delete</button>
-                    </div>
-                  </div>
-                </div>
-              `).join('') : `
+            <div class="card">
+              <div class="card-header">
+                <h3 class="card-title">All Pages</h3>
+              </div>
+              
+              <div class="search-box">
+                <i class="fas fa-search"></i>
+                <input type="text" id="search-input" placeholder="Search pages...">
+              </div>
+              
+              ${pages.length > 0 ? `
+                <table class="table">
+                  <thead>
+                    <tr>
+                      <th>Title</th>
+                      <th>Handle</th>
+                      <th>Status</th>
+                      <th>Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody id="pages-table-body">
+                    ${pages.map(page => `
+                      <tr>
+                        <td>${page.title}</td>
+                        <td>${page.handle}</td>
+                        <td>
+                          <span class="status ${page.published ? 'status-published' : 'status-draft'}">
+                            ${page.published ? 'Published' : 'Draft'}
+                          </span>
+                        </td>
+                        <td class="actions">
+                          <a href="/builder/${page.id}?shop=${shop}" class="action-btn" title="Edit">
+                            <i class="fas fa-edit"></i>
+                          </a>
+                          <button class="action-btn" title="Delete" onclick="deletePage('${page.id}')">
+                            <i class="fas fa-trash"></i>
+                          </button>
+                          <a href="https://${shop}/pages/${page.handle}" target="_blank" class="action-btn" title="View">
+                            <i class="fas fa-external-link-alt"></i>
+                          </a>
+                        </td>
+                      </tr>
+                    `).join('')}
+                  </tbody>
+                </table>
+              ` : `
                 <div class="empty-state">
-                  <h2>No Pages Found</h2>
-                  <p>Create your first page to get started with KingsBuilder.</p>
-                  <button class="create-page-btn" onclick="document.getElementById('create-page-modal').classList.add('show')">+ Create New Page</button>
+                  <i class="fas fa-file-alt"></i>
+                  <h3>No pages found</h3>
+                  <p>Create your first page to get started</p>
+                  <a href="/pages/new?shop=${shop}" class="btn">
+                    <i class="fas fa-plus"></i>
+                    Create Page
+                  </a>
                 </div>
               `}
             </div>
-          </div>
+          </main>
+        </div>
+        
+        <script>
+          // Theme toggle functionality
+          const themeToggle = document.getElementById('theme-toggle');
+          const themeIcon = themeToggle.querySelector('i');
           
-          <!-- Create Page Modal -->
-          <div class="modal" id="create-page-modal">
-            <div class="modal-content">
-              <div class="modal-header">
-                <h2>Create New Page</h2>
-              </div>
-              <div class="modal-body">
-                <div class="form-row">
-                  <label for="new-page-title">Page Title</label>
-                  <input type="text" id="new-page-title" placeholder="Enter page title">
-                </div>
-              </div>
-              <div class="modal-footer">
-                <button class="modal-btn cancel" onclick="document.getElementById('create-page-modal').classList.remove('show')">Cancel</button>
-                <button class="modal-btn primary" onclick="createNewPage()">Create Page</button>
-              </div>
-            </div>
-          </div>
+          // Check for saved theme preference or use device preference
+          const savedTheme = localStorage.getItem('theme') || 
+            (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
           
-          <script>
-            // Close modal when clicking outside
-            window.addEventListener('click', function(event) {
-              const modal = document.getElementById('create-page-modal');
-              if (event.target === modal) {
-                modal.classList.remove('show');
-              }
-            });
+          // Apply the theme
+          document.documentElement.setAttribute('data-theme', savedTheme);
+          updateThemeIcon(savedTheme);
+          
+          // Toggle theme when button is clicked
+          themeToggle.addEventListener('click', () => {
+            const currentTheme = document.documentElement.getAttribute('data-theme');
+            const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
             
-            // Prevent form submission on enter
-            document.getElementById('new-page-title').addEventListener('keydown', function(event) {
-              if (event.key === 'Enter') {
-                event.preventDefault();
-                createNewPage();
-              }
+            document.documentElement.setAttribute('data-theme', newTheme);
+            localStorage.setItem('theme', newTheme);
+            updateThemeIcon(newTheme);
+          });
+          
+          function updateThemeIcon(theme) {
+            if (theme === 'dark') {
+              themeIcon.classList.remove('fa-moon');
+              themeIcon.classList.add('fa-sun');
+            } else {
+              themeIcon.classList.remove('fa-sun');
+              themeIcon.classList.add('fa-moon');
+            }
+          }
+          
+          // Search functionality
+          const searchInput = document.getElementById('search-input');
+          const pagesTableBody = document.getElementById('pages-table-body');
+          
+          if (searchInput && pagesTableBody) {
+            searchInput.addEventListener('input', () => {
+              const searchTerm = searchInput.value.toLowerCase();
+              const rows = pagesTableBody.querySelectorAll('tr');
+              
+              rows.forEach(row => {
+                const title = row.cells[0].textContent.toLowerCase();
+                const handle = row.cells[1].textContent.toLowerCase();
+                
+                if (title.includes(searchTerm) || handle.includes(searchTerm)) {
+                  row.style.display = '';
+                } else {
+                  row.style.display = 'none';
+                }
+              });
             });
-          </script>
-        </body>
+          }
+          
+          // Delete page functionality
+          function deletePage(pageId) {
+            if (confirm('Are you sure you want to delete this page? This action cannot be undone.')) {
+              fetch(\`/pages/\${pageId}\`, {
+                method: 'DELETE',
+                headers: {
+                  'Content-Type': 'application/json'
+                }
+              })
+              .then(response => response.json())
+              .then(data => {
+                if (data.success) {
+                  alert('Page deleted successfully');
+                  window.location.reload();
+                } else {
+                  alert('Error deleting page: ' + data.error);
+                }
+              })
+              .catch(error => {
+                console.error('Error:', error);
+                alert('An error occurred while deleting the page');
+              });
+            }
+          }
+        </script>
+      </body>
       </html>
     `);
   } catch (error) {
-    console.error('Error rendering dashboard:', error);
+    console.error('Dashboard error:', error);
     res.status(500).send(`
-      <html>
-        <head>
-          <title>Error</title>
-          <style>
-            body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; margin: 0; padding: 40px; text-align: center; }
-            .error-container { max-width: 600px; margin: 0 auto; }
-            h1 { color: #ef4444; }
-            .error-message { background: #fee2e2; border: 1px solid #ef4444; padding: 20px; border-radius: 8px; margin: 20px 0; text-align: left; }
-          </style>
-        </head>
-        <body>
-          <div class="error-container">
-            <h1>Error Loading Dashboard</h1>
-            <p>There was an error loading the dashboard. Please try again or contact support if the problem persists.</p>
-            <div class="error-message">
-              <strong>Error:</strong> ${error.message}
-            </div>
-          </div>
-        </body>
-      </html>
+      <h1>Error</h1>
+      <p>An error occurred while loading the dashboard: ${error.message}</p>
+      <pre>${error.stack}</pre>
     `);
   }
 });
 
 module.exports = router;
+
+
+
