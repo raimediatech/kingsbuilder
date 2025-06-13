@@ -10,10 +10,19 @@ router.get('/:pageId', (req, res) => {
     const { pageId } = req.params;
     const shop = req.query.shop || req.cookies?.shopOrigin;
     
+    // Set security headers for Shopify iframe embedding
+    res.setHeader(
+      "Content-Security-Policy",
+      "frame-ancestors 'self' https://*.myshopify.com https://*.shopify.com; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.shopify.com https://cdnjs.cloudflare.com;"
+    );
+    
+    // Remove X-Frame-Options as it's deprecated and causing issues
+    res.removeHeader('X-Frame-Options');
+    
     if (!shop) {
       return res.status(400).send('Shop parameter is required');
     }
-    
+
     // Send the builder HTML
     res.send(`
       <!DOCTYPE html>
@@ -440,49 +449,49 @@ router.get('/:pageId', (req, res) => {
           // Page data
           const pageId = '${pageId}';
           const shop = '${shop}';
-          
+
           // Save button functionality
           document.getElementById('save-btn').addEventListener('click', function() {
             alert('Page saved successfully!');
           });
-          
+
           // Publish button functionality
           document.getElementById('publish-btn').addEventListener('click', function() {
             alert('Page published successfully!');
           });
-          
+
           // Preview button functionality
           document.getElementById('preview-btn').addEventListener('click', function() {
             alert('Preview functionality will be available soon.');
           });
-          
+
           // Basic drag and drop functionality
           const elements = document.querySelectorAll('.element-item');
           const canvas = document.getElementById('canvas');
-          
+
           elements.forEach(element => {
             element.addEventListener('dragstart', function(e) {
               e.dataTransfer.setData('text/plain', this.getAttribute('data-type'));
             });
           });
-          
+
           canvas.addEventListener('dragover', function(e) {
             e.preventDefault();
           });
-          
+
           canvas.addEventListener('drop', function(e) {
             e.preventDefault();
             const type = e.dataTransfer.getData('text/plain');
-            
+
             // Remove placeholder if it exists
             const placeholder = canvas.querySelector('.placeholder');
             if (placeholder) {
               canvas.removeChild(placeholder);
             }
-            
+
             // Create element based on type
             let newElement;
-            
+
             switch(type) {
               case 'heading':
                 newElement = document.createElement('h2');
@@ -516,13 +525,13 @@ router.get('/:pageId', (req, res) => {
                 break;
               case 'hero':
                 newElement = document.createElement('div');
-                newElement.innerHTML = `
+                newElement.innerHTML = \`
                   <div style="background-color: #f0f0f0; padding: 60px 20px; text-align: center;">
                     <h1>Hero Title</h1>
                     <p style="margin: 20px 0;">Hero subtitle text goes here. This is a sample hero section.</p>
                     <button class="btn" style="background-color: #000; color: #fff; padding: 10px 20px;">Call to Action</button>
                   </div>
-                `;
+                \`;
                 newElement.style.margin = '10px 0';
                 newElement.style.border = '1px dashed #ccc';
                 break;
@@ -533,7 +542,7 @@ router.get('/:pageId', (req, res) => {
                 newElement.style.margin = '10px 0';
                 newElement.style.border = '1px dashed #ccc';
             }
-            
+
             // Make the element selectable
             newElement.setAttribute('data-element-type', type);
             newElement.style.cursor = 'pointer';
@@ -541,44 +550,44 @@ router.get('/:pageId', (req, res) => {
               e.stopPropagation();
               selectElement(this);
             });
-            
+
             canvas.appendChild(newElement);
           });
-          
+
           // Element selection functionality
           function selectElement(element) {
             // Remove selection from all elements
             document.querySelectorAll('[data-element-type]').forEach(el => {
               el.style.boxShadow = 'none';
             });
-            
+
             // Add selection to clicked element
             element.style.boxShadow = '0 0 0 2px #000';
-            
+
             // Show properties panel
             document.getElementById('no-selection').style.display = 'none';
             document.getElementById('properties-form').style.display = 'block';
-            
+
             // Update properties form
             document.getElementById('element-type').value = element.getAttribute('data-element-type');
-            
+
             // Set content based on element type
-            if (element.getAttribute('data-element-type') === 'heading' || 
-                element.getAttribute('data-element-type') === 'text' || 
+            if (element.getAttribute('data-element-type') === 'heading' ||
+                element.getAttribute('data-element-type') === 'text' ||
                 element.getAttribute('data-element-type') === 'button') {
               document.getElementById('element-content').value = element.textContent;
             } else {
               document.getElementById('element-content').value = 'Complex element - content editing limited';
             }
           }
-          
+
           // Deselect when clicking on canvas
           canvas.addEventListener('click', function(e) {
             if (e.target === canvas) {
               document.querySelectorAll('[data-element-type]').forEach(el => {
                 el.style.boxShadow = 'none';
               });
-              
+
               document.getElementById('no-selection').style.display = 'block';
               document.getElementById('properties-form').style.display = 'none';
             }
