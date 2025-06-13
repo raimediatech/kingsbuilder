@@ -74,7 +74,7 @@ router.get('/', async (req, res) => {
             --warning-color: #f59e0b;
             --danger-color: #ef4444;
           }
-          
+
           [data-theme="dark"] {
             --primary-color: #000000;
             --primary-hover: #333333;
@@ -86,32 +86,32 @@ router.get('/', async (req, res) => {
             --warning-color: #f59e0b;
             --danger-color: #ef4444;
           }
-          
+
           * {
             margin: 0;
             padding: 0;
             box-sizing: border-box;
           }
-          
+
           body {
             font-family: 'Inter', sans-serif;
             background-color: var(--bg-color);
             color: var(--text-color);
             transition: background-color 0.3s, color 0.3s;
           }
-          
+
           .container {
             max-width: 1200px;
             margin: 0 auto;
             padding: 0 20px;
           }
-          
+
           .dashboard {
             display: grid;
             grid-template-columns: 250px 1fr;
             min-height: 100vh;
           }
-          
+
           .sidebar {
             background-color: var(--card-bg);
             border-right: 1px solid var(--border-color);
@@ -121,27 +121,27 @@ router.get('/', async (req, res) => {
             height: 100vh;
             overflow-y: auto;
           }
-          
+
           .logo {
             padding: 0 20px 30px;
             border-bottom: 1px solid var(--border-color);
             margin-bottom: 20px;
           }
-          
+
           .logo h1 {
             font-size: 24px;
             font-weight: 700;
             color: var(--primary-color);
           }
-          
+
           .nav-menu {
             list-style: none;
           }
-          
+
           .nav-item {
             margin-bottom: 5px;
           }
-          
+
           .nav-link {
             display: flex;
             align-items: center;
@@ -152,34 +152,34 @@ router.get('/', async (req, res) => {
             margin: 0 10px;
             transition: all 0.2s;
           }
-          
+
           .nav-link:hover, .nav-link.active {
             background-color: var(--primary-color);
             color: white;
           }
-          
+
           .nav-link i {
             margin-right: 10px;
             width: 20px;
             text-align: center;
           }
-          
+
           .main-content {
             padding: 30px;
           }
-          
+
           .header {
             display: flex;
             justify-content: space-between;
             align-items: center;
             margin-bottom: 30px;
           }
-          
+
           .header h2 {
             font-size: 24px;
             font-weight: 600;
           }
-          
+
           .theme-toggle {
             background: none;
             border: none;
@@ -189,7 +189,7 @@ router.get('/', async (req, res) => {
             padding: 5px;
             margin-right: 15px;
           }
-          
+
           .btn {
             display: inline-flex;
             align-items: center;
@@ -205,38 +205,38 @@ router.get('/', async (req, res) => {
             transition: background-color 0.2s;
             text-decoration: none;
           }
-          
+
           .btn:hover {
             background-color: var(--primary-hover);
           }
-          
+
           .btn i {
             margin-right: 8px;
           }
-          
+
           .btn-outline {
             background-color: transparent;
             border: 1px solid var(--primary-color);
             color: var(--primary-color);
           }
-          
+
           .btn-outline:hover {
             background-color: var(--primary-color);
             color: white;
           }
-          
+
           .btn-success {
             background-color: var(--success-color);
           }
-          
+
           .btn-warning {
             background-color: var(--warning-color);
           }
-          
+
           .btn-danger {
             background-color: var(--danger-color);
           }
-          
+
           .card {
             background-color: var(--card-bg);
             border-radius: 10px;
@@ -244,24 +244,24 @@ router.get('/', async (req, res) => {
             padding: 25px;
             margin-bottom: 30px;
           }
-          
+
           .card-header {
             display: flex;
             justify-content: space-between;
             align-items: center;
             margin-bottom: 20px;
           }
-          
+
           .card-title {
             font-size: 18px;
             font-weight: 600;
           }
-          
+
           .search-box {
             position: relative;
             margin-bottom: 20px;
           }
-          
+
           .search-box input {
             width: 100%;
             padding: 12px 20px;
@@ -272,102 +272,109 @@ router.get('/', async (req, res) => {
             background-color: var(--bg-color);
             color: var(--text-color);
           }
-          
+
           .search-box i {
             position: absolute;
             left: 15px;
             top: 50%;
             transform: translateY(-50%);
-            color: #888;
+            color: var(--text-color);
+            opacity: 0.5;
           }
-          
+
           .table {
             width: 100%;
             border-collapse: collapse;
           }
-          
+
           .table th, .table td {
-            padding: 15px;
+            padding: 12px 15px;
             text-align: left;
             border-bottom: 1px solid var(--border-color);
           }
-          
+
           .table th {
             font-weight: 600;
             color: var(--text-color);
-            background-color: var(--card-bg);
+            opacity: 0.8;
           }
-          
+
           .table tr:last-child td {
             border-bottom: none;
           }
-          
-          .table tr:hover td {
-            background-color: rgba(0, 0, 0, 0.02);
-          }
-          
+
           .status {
             display: inline-block;
-            padding: 5px 10px;
-            border-radius: 20px;
+            padding: 4px 8px;
+            border-radius: 4px;
             font-size: 12px;
             font-weight: 500;
           }
-          
+
           .status-published {
             background-color: rgba(16, 185, 129, 0.1);
             color: var(--success-color);
           }
-          
+
           .status-draft {
             background-color: rgba(245, 158, 11, 0.1);
             color: var(--warning-color);
           }
-          
+
           .actions {
             display: flex;
             gap: 10px;
           }
-          
+
           .action-btn {
-            background: none;
-            border: none;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 32px;
+            height: 32px;
+            border-radius: 6px;
+            background-color: var(--bg-color);
             color: var(--text-color);
+            border: 1px solid var(--border-color);
             cursor: pointer;
-            font-size: 16px;
-            transition: color 0.2s;
+            transition: all 0.2s;
+            text-decoration: none;
           }
-          
+
           .action-btn:hover {
-            color: var(--primary-color);
+            background-color: var(--primary-color);
+            color: white;
+            border-color: var(--primary-color);
           }
-          
+
           .empty-state {
             text-align: center;
-            padding: 50px 0;
+            padding: 40px 0;
           }
-          
+
           .empty-state i {
-            font-size: 50px;
-            color: #ccc;
+            font-size: 48px;
+            color: var(--border-color);
             margin-bottom: 20px;
           }
-          
+
           .empty-state h3 {
-            font-size: 20px;
+            font-size: 18px;
+            font-weight: 600;
             margin-bottom: 10px;
           }
-          
+
           .empty-state p {
-            color: #888;
+            color: var(--text-color);
+            opacity: 0.7;
             margin-bottom: 20px;
           }
-          
+
           @media (max-width: 768px) {
             .dashboard {
               grid-template-columns: 1fr;
             }
-            
+
             .sidebar {
               display: none;
             }
@@ -382,38 +389,38 @@ router.get('/', async (req, res) => {
             </div>
             <ul class="nav-menu">
               <li class="nav-item">
-                <a href="#" class="nav-link active">
+                <a href="/dashboard?shop=${shop}" class="nav-link active">
                   <i class="fas fa-home"></i>
                   Dashboard
                 </a>
               </li>
               <li class="nav-item">
-                <a href="#" class="nav-link">
+                <a href="/pages?shop=${shop}" class="nav-link">
                   <i class="fas fa-file"></i>
                   Pages
                 </a>
               </li>
               <li class="nav-item">
-                <a href="#" class="nav-link">
+                <a href="/templates?shop=${shop}" class="nav-link">
                   <i class="fas fa-palette"></i>
                   Templates
                 </a>
               </li>
               <li class="nav-item">
-                <a href="#" class="nav-link">
+                <a href="/settings?shop=${shop}" class="nav-link">
                   <i class="fas fa-cog"></i>
                   Settings
                 </a>
               </li>
               <li class="nav-item">
-                <a href="#" class="nav-link">
+                <a href="/help?shop=${shop}" class="nav-link">
                   <i class="fas fa-question-circle"></i>
                   Help
                 </a>
               </li>
             </ul>
           </aside>
-          
+
           <main class="main-content">
             <div class="header">
               <h2>Pages</h2>
@@ -427,17 +434,17 @@ router.get('/', async (req, res) => {
                 </a>
               </div>
             </div>
-            
+
             <div class="card">
               <div class="card-header">
                 <h3 class="card-title">All Pages</h3>
               </div>
-              
+
               <div class="search-box">
                 <i class="fas fa-search"></i>
                 <input type="text" id="search-input" placeholder="Search pages...">
               </div>
-              
+
               ${pages.length > 0 ? `
                 <table class="table">
                   <thead>
@@ -487,30 +494,30 @@ router.get('/', async (req, res) => {
             </div>
           </main>
         </div>
-        
+
         <script>
           // Theme toggle functionality
           const themeToggle = document.getElementById('theme-toggle');
           const themeIcon = themeToggle.querySelector('i');
-          
+
           // Check for saved theme preference or use device preference
-          const savedTheme = localStorage.getItem('theme') || 
+          const savedTheme = localStorage.getItem('theme') ||
             (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
-          
+
           // Apply the theme
           document.documentElement.setAttribute('data-theme', savedTheme);
           updateThemeIcon(savedTheme);
-          
+
           // Toggle theme when button is clicked
           themeToggle.addEventListener('click', () => {
             const currentTheme = document.documentElement.getAttribute('data-theme');
             const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
-            
+
             document.documentElement.setAttribute('data-theme', newTheme);
             localStorage.setItem('theme', newTheme);
             updateThemeIcon(newTheme);
           });
-          
+
           function updateThemeIcon(theme) {
             if (theme === 'dark') {
               themeIcon.classList.remove('fa-moon');
@@ -520,20 +527,20 @@ router.get('/', async (req, res) => {
               themeIcon.classList.add('fa-moon');
             }
           }
-          
+
           // Search functionality
           const searchInput = document.getElementById('search-input');
           const pagesTableBody = document.getElementById('pages-table-body');
-          
+
           if (searchInput && pagesTableBody) {
             searchInput.addEventListener('input', () => {
               const searchTerm = searchInput.value.toLowerCase();
               const rows = pagesTableBody.querySelectorAll('tr');
-              
+
               rows.forEach(row => {
                 const title = row.cells[0].textContent.toLowerCase();
                 const handle = row.cells[1].textContent.toLowerCase();
-                
+
                 if (title.includes(searchTerm) || handle.includes(searchTerm)) {
                   row.style.display = '';
                 } else {
@@ -542,11 +549,11 @@ router.get('/', async (req, res) => {
               });
             });
           }
-          
+
           // Delete page functionality
           function deletePage(pageId) {
             if (confirm('Are you sure you want to delete this page? This action cannot be undone.')) {
-              fetch(\`/pages/\${pageId}\`, {
+              fetch(`/pages/${pageId}`, {
                 method: 'DELETE',
                 headers: {
                   'Content-Type': 'application/json'
@@ -582,6 +589,3 @@ router.get('/', async (req, res) => {
 });
 
 module.exports = router;
-
-
-
