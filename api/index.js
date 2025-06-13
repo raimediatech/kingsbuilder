@@ -128,6 +128,23 @@ app.get('/api/health', (req, res) => {
   });
 });
 
+// Test route to check if routing is working
+app.get('/test-route', (req, res) => {
+  res.send(`
+    <h1>Test Route Working</h1>
+    <p>This is a test route to check if the Express routing is working correctly.</p>
+    <p>Current time: ${new Date().toISOString()}</p>
+    <p>Environment: ${process.env.NODE_ENV || 'development'}</p>
+    <p>
+      <a href="/dashboard">Try Dashboard</a> | 
+      <a href="/pages">Try Pages</a> | 
+      <a href="/templates">Try Templates</a> | 
+      <a href="/settings">Try Settings</a> | 
+      <a href="/help">Try Help</a>
+    </p>
+  `);
+});
+
 // Serve static files from the public directory
 app.use(express.static(path.join(__dirname, '../public')));
 
@@ -200,6 +217,33 @@ try {
   console.log('Pages routes registered successfully');
 } catch (error) {
   console.error('Error loading pages routes:', error);
+}
+
+// Import templates routes
+try {
+  const templatesRoutes = require('./routes/templates');
+  app.use('/templates', templatesRoutes);
+  console.log('Templates routes registered successfully');
+} catch (error) {
+  console.error('Error loading templates routes:', error);
+}
+
+// Import settings routes
+try {
+  const settingsRoutes = require('./routes/settings');
+  app.use('/settings', settingsRoutes);
+  console.log('Settings routes registered successfully');
+} catch (error) {
+  console.error('Error loading settings routes:', error);
+}
+
+// Import help routes
+try {
+  const helpRoutes = require('./routes/help');
+  app.use('/help', helpRoutes);
+  console.log('Help routes registered successfully');
+} catch (error) {
+  console.error('Error loading help routes:', error);
 }
 
 // Landing page route
@@ -337,4 +381,3 @@ if (require.main === module) {
 }
 
 module.exports = app;
-
