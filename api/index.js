@@ -155,6 +155,47 @@ try {
   console.log('Dashboard routes registered successfully - using original dashboard.js');
 } catch (error) {
   console.error('Error loading dashboard routes:', error);
+  
+  // Fallback route for dashboard if dashboard.js fails to load
+  app.get('/dashboard', (req, res) => {
+    const shop = req.query.shop || req.cookies?.shopOrigin;
+    
+    res.send(`
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <title>KingsBuilder Dashboard</title>
+          <meta name="viewport" content="width=device-width, initial-scale=1.0">
+          <style>
+            body { font-family: sans-serif; margin: 0; padding: 20px; background: #f6f6f7; }
+            .dashboard-container { max-width: 1200px; margin: 50px auto; background: white; padding: 30px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+            h1 { color: #333; margin-bottom: 20px; }
+            p { color: #666; line-height: 1.6; margin-bottom: 20px; }
+            .btn { display: inline-block; background: #000; color: white; padding: 10px 20px; border-radius: 4px; text-decoration: none; margin-right: 10px; }
+            .nav { display: flex; margin-bottom: 30px; }
+            .nav a { margin-right: 20px; color: #333; text-decoration: none; }
+            .nav a:hover { text-decoration: underline; }
+          </style>
+        </head>
+        <body>
+          <div class="dashboard-container">
+            <h1>KingsBuilder Dashboard</h1>
+            <div class="nav">
+              <a href="/dashboard?shop=${shop}">Dashboard</a>
+              <a href="/pages?shop=${shop}">Pages</a>
+              <a href="/templates?shop=${shop}">Templates</a>
+              <a href="/settings?shop=${shop}">Settings</a>
+              <a href="/help?shop=${shop}">Help</a>
+            </div>
+            <p>Welcome to the KingsBuilder dashboard. This is a fallback page that appears when the main dashboard cannot be loaded.</p>
+            <p>From here you can manage your Shopify pages and access the page builder.</p>
+            <a href="/pages/new?shop=${shop}" class="btn">Create New Page</a>
+            <a href="/test-route" class="btn">Test Route</a>
+          </div>
+        </body>
+      </html>
+    `);
+  });
 }
 
 try {
