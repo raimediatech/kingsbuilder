@@ -1,18 +1,13 @@
-// api/routes/dashboard.js - Dashboard routes
+// api/routes/help.js - Help routes
 const express = require('express');
 const router = express.Router();
-const shopifyApi = require('../shopify');
-const { PageModel } = require('../database');
 
-// Dashboard home page
+// Help home page
 router.get('/', async (req, res) => {
   try {
     // Get shop from various possible sources
     const shop = req.query.shop || req.shopifyShop || req.headers['x-shopify-shop-domain'] || req.cookies?.shopOrigin;
     
-    // Get access token from various possible sources
-    const accessToken = req.headers['x-shopify-access-token'] || req.shopifyAccessToken || req.cookies?.shopifyAccessToken;
-
     // Set security headers for Shopify iframe embedding
     res.setHeader(
       "Content-Security-Policy",
@@ -22,44 +17,14 @@ router.get('/', async (req, res) => {
     // Remove X-Frame-Options as it's deprecated and causing issues
     res.removeHeader('X-Frame-Options');
 
-    // Get pages from Shopify or database
-    let pages = [];
-
-    if (shop && accessToken) {
-      try {
-        const result = await shopifyApi.getShopifyPages(shop, accessToken);
-        pages = result.pages || [];
-        console.log(`Retrieved ${pages.length} pages from Shopify`);
-      } catch (error) {
-        console.error('Error fetching pages from Shopify:', error);
-        // Fall back to database
-        const dbPages = await PageModel.find({ shop });
-        pages = dbPages.map(page => ({
-          id: page.pageId,
-          title: page.title,
-          handle: page.handle,
-          body_html: page.bodyHtml,
-          published: page.published
-        }));
-        console.log(`Retrieved ${pages.length} pages from database`);
-      }
-    } else {
-      console.log('No shop or access token available, using mock data');
-      pages = [
-        { id: '1', title: 'Homepage', body_html: '<p>Welcome to our store</p>', handle: 'home', published: true },
-        { id: '2', title: 'About Us', body_html: '<p>Our company story</p>', handle: 'about', published: true },
-        { id: '3', title: 'Contact', body_html: '<p>Get in touch</p>', handle: 'contact', published: true }
-      ];
-    }
-
-    // Render the dashboard
+    // Render the help page
     res.send(`
       <!DOCTYPE html>
       <html lang="en">
       <head>
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>KingsBuilder Dashboard</title>
+        <title>KingsBuilder Help</title>
         <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
         <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
         <style>
@@ -214,29 +179,6 @@ router.get('/', async (req, res) => {
             margin-right: 8px;
           }
 
-          .btn-outline {
-            background-color: transparent;
-            border: 1px solid var(--primary-color);
-            color: var(--primary-color);
-          }
-
-          .btn-outline:hover {
-            background-color: var(--primary-color);
-            color: white;
-          }
-
-          .btn-success {
-            background-color: var(--success-color);
-          }
-
-          .btn-warning {
-            background-color: var(--warning-color);
-          }
-
-          .btn-danger {
-            background-color: var(--danger-color);
-          }
-
           .card {
             background-color: var(--card-bg);
             border-radius: 10px;
@@ -257,117 +199,110 @@ router.get('/', async (req, res) => {
             font-weight: 600;
           }
 
-          .search-box {
+          .help-search {
             position: relative;
-            margin-bottom: 20px;
+            margin-bottom: 30px;
           }
 
-          .search-box input {
+          .help-search input {
             width: 100%;
-            padding: 12px 20px;
-            padding-left: 40px;
+            padding: 15px 20px;
+            padding-left: 50px;
             border: 1px solid var(--border-color);
-            border-radius: 6px;
-            font-size: 14px;
+            border-radius: 8px;
+            font-size: 16px;
             background-color: var(--bg-color);
             color: var(--text-color);
           }
 
-          .search-box i {
+          .help-search i {
             position: absolute;
-            left: 15px;
+            left: 20px;
             top: 50%;
             transform: translateY(-50%);
             color: var(--text-color);
             opacity: 0.5;
+            font-size: 20px;
           }
 
-          .table {
-            width: 100%;
-            border-collapse: collapse;
+          .help-categories {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
           }
 
-          .table th, .table td {
-            padding: 12px 15px;
-            text-align: left;
-            border-bottom: 1px solid var(--border-color);
-          }
-
-          .table th {
-            font-weight: 600;
-            color: var(--text-color);
-            opacity: 0.8;
-          }
-
-          .table tr:last-child td {
-            border-bottom: none;
-          }
-
-          .status {
-            display: inline-block;
-            padding: 4px 8px;
-            border-radius: 4px;
-            font-size: 12px;
-            font-weight: 500;
-          }
-
-          .status-published {
-            background-color: rgba(16, 185, 129, 0.1);
-            color: var(--success-color);
-          }
-
-          .status-draft {
-            background-color: rgba(245, 158, 11, 0.1);
-            color: var(--warning-color);
-          }
-
-          .actions {
-            display: flex;
-            gap: 10px;
-          }
-
-          .action-btn {
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            width: 32px;
-            height: 32px;
-            border-radius: 6px;
+          .help-category {
             background-color: var(--bg-color);
-            color: var(--text-color);
             border: 1px solid var(--border-color);
-            cursor: pointer;
-            transition: all 0.2s;
-            text-decoration: none;
-          }
-
-          .action-btn:hover {
-            background-color: var(--primary-color);
-            color: white;
-            border-color: var(--primary-color);
-          }
-
-          .empty-state {
+            border-radius: 8px;
+            padding: 20px;
             text-align: center;
-            padding: 40px 0;
+            transition: transform 0.2s, box-shadow 0.2s;
           }
 
-          .empty-state i {
-            font-size: 48px;
-            color: var(--border-color);
-            margin-bottom: 20px;
+          .help-category:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
           }
 
-          .empty-state h3 {
+          .help-category i {
+            font-size: 32px;
+            margin-bottom: 15px;
+            color: var(--primary-color);
+          }
+
+          .help-category h3 {
             font-size: 18px;
             font-weight: 600;
             margin-bottom: 10px;
           }
 
-          .empty-state p {
+          .help-category p {
+            font-size: 14px;
             color: var(--text-color);
             opacity: 0.7;
-            margin-bottom: 20px;
+          }
+
+          .faq-item {
+            margin-bottom: 15px;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            overflow: hidden;
+          }
+
+          .faq-question {
+            padding: 15px 20px;
+            background-color: var(--bg-color);
+            font-weight: 500;
+            cursor: pointer;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+          }
+
+          .faq-question:hover {
+            background-color: var(--card-bg);
+          }
+
+          .faq-answer {
+            padding: 0 20px;
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.3s, padding 0.3s;
+          }
+
+          .faq-answer.active {
+            padding: 15px 20px;
+            max-height: 500px;
+          }
+
+          .faq-question i {
+            transition: transform 0.3s;
+          }
+
+          .faq-question.active i {
+            transform: rotate(180deg);
           }
 
           @media (max-width: 768px) {
@@ -377,6 +312,10 @@ router.get('/', async (req, res) => {
 
             .sidebar {
               display: none;
+            }
+
+            .help-categories {
+              grid-template-columns: 1fr;
             }
           }
         </style>
@@ -389,7 +328,7 @@ router.get('/', async (req, res) => {
             </div>
             <ul class="nav-menu">
               <li class="nav-item">
-                <a href="/dashboard?shop=${shop}" class="nav-link active">
+                <a href="/dashboard?shop=${shop}" class="nav-link">
                   <i class="fas fa-home"></i>
                   Dashboard
                 </a>
@@ -413,7 +352,7 @@ router.get('/', async (req, res) => {
                 </a>
               </li>
               <li class="nav-item">
-                <a href="/help?shop=${shop}" class="nav-link">
+                <a href="/help?shop=${shop}" class="nav-link active">
                   <i class="fas fa-question-circle"></i>
                   Help
                 </a>
@@ -423,74 +362,102 @@ router.get('/', async (req, res) => {
 
           <main class="main-content">
             <div class="header">
-              <h2>Pages</h2>
+              <h2>Help Center</h2>
               <div style="display: flex; align-items: center;">
                 <button id="theme-toggle" class="theme-toggle">
                   <i class="fas fa-moon"></i>
                 </button>
-                <a href="/pages/new?shop=${shop}" class="btn">
-                  <i class="fas fa-plus"></i>
-                  Create Page
+                <a href="mailto:support@kingsbuilder.com" class="btn">
+                  <i class="fas fa-envelope"></i>
+                  Contact Support
                 </a>
+              </div>
+            </div>
+
+            <div class="help-search">
+              <i class="fas fa-search"></i>
+              <input type="text" placeholder="Search for help...">
+            </div>
+
+            <div class="help-categories">
+              <div class="help-category">
+                <i class="fas fa-rocket"></i>
+                <h3>Getting Started</h3>
+                <p>Learn the basics of KingsBuilder</p>
+              </div>
+              <div class="help-category">
+                <i class="fas fa-file-alt"></i>
+                <h3>Page Builder</h3>
+                <p>Create and edit pages</p>
+              </div>
+              <div class="help-category">
+                <i class="fas fa-palette"></i>
+                <h3>Templates</h3>
+                <p>Use and customize templates</p>
+              </div>
+              <div class="help-category">
+                <i class="fas fa-cog"></i>
+                <h3>Settings</h3>
+                <p>Configure your KingsBuilder</p>
               </div>
             </div>
 
             <div class="card">
               <div class="card-header">
-                <h3 class="card-title">All Pages</h3>
+                <h3 class="card-title">Frequently Asked Questions</h3>
               </div>
 
-              <div class="search-box">
-                <i class="fas fa-search"></i>
-                <input type="text" id="search-input" placeholder="Search pages...">
-              </div>
-
-              ${pages.length > 0 ? `
-                <table class="table">
-                  <thead>
-                    <tr>
-                      <th>Title</th>
-                      <th>Handle</th>
-                      <th>Status</th>
-                      <th>Actions</th>
-                    </tr>
-                  </thead>
-                  <tbody id="pages-table-body">
-                    ${pages.map(page => `
-                      <tr>
-                        <td>${page.title}</td>
-                        <td>${page.handle}</td>
-                        <td>
-                          <span class="status ${page.published ? 'status-published' : 'status-draft'}">
-                            ${page.published ? 'Published' : 'Draft'}
-                          </span>
-                        </td>
-                        <td class="actions">
-                          <a href="/builder/${page.id}?shop=${shop}" class="action-btn" title="Edit">
-                            <i class="fas fa-edit"></i>
-                          </a>
-                          <button class="action-btn" title="Delete" onclick="deletePage('${page.id}')">
-                            <i class="fas fa-trash"></i>
-                          </button>
-                          <a href="https://${shop}/pages/${page.handle}" target="_blank" class="action-btn" title="View">
-                            <i class="fas fa-external-link-alt"></i>
-                          </a>
-                        </td>
-                      </tr>
-                    `).join('')}
-                  </tbody>
-                </table>
-              ` : `
-                <div class="empty-state">
-                  <i class="fas fa-file-alt"></i>
-                  <h3>No pages found</h3>
-                  <p>Create your first page to get started</p>
-                  <a href="/pages/new?shop=${shop}" class="btn">
-                    <i class="fas fa-plus"></i>
-                    Create Page
-                  </a>
+              <div class="faq-list">
+                <div class="faq-item">
+                  <div class="faq-question">
+                    How do I create a new page?
+                    <i class="fas fa-chevron-down"></i>
+                  </div>
+                  <div class="faq-answer">
+                    <p>To create a new page, click on the "Create Page" button in the dashboard. You can start from scratch or use one of our pre-designed templates. Once in the page builder, you can add elements by dragging them from the left sidebar onto your page.</p>
+                  </div>
                 </div>
-              `}
+
+                <div class="faq-item">
+                  <div class="faq-question">
+                    How do I publish my page to my Shopify store?
+                    <i class="fas fa-chevron-down"></i>
+                  </div>
+                  <div class="faq-answer">
+                    <p>Once you've finished designing your page, click the "Save & Publish" button in the top right corner of the page builder. This will save your page and make it live on your Shopify store. You can also save a draft version by clicking "Save Draft" if you're not ready to publish yet.</p>
+                  </div>
+                </div>
+
+                <div class="faq-item">
+                  <div class="faq-question">
+                    Can I use my own custom CSS and JavaScript?
+                    <i class="fas fa-chevron-down"></i>
+                  </div>
+                  <div class="faq-answer">
+                    <p>Yes, you can add custom CSS and JavaScript to your pages. Go to the Settings section and navigate to the Advanced tab. There you'll find fields to enter your custom CSS and JavaScript code that will be applied to all pages created with KingsBuilder.</p>
+                  </div>
+                </div>
+
+                <div class="faq-item">
+                  <div class="faq-question">
+                    How do I add products to my page?
+                    <i class="fas fa-chevron-down"></i>
+                  </div>
+                  <div class="faq-answer">
+                    <p>In the page builder, you'll find a "Product" element in the Shopify section of the left sidebar. Drag this element onto your page, then click on it to open the properties panel. There you can search for and select products from your store to display on your page.</p>
+                  </div>
+                </div>
+
+                <div class="faq-item">
+                  <div class="faq-question">
+                    Is KingsBuilder compatible with all Shopify themes?
+                    <i class="fas fa-chevron-down"></i>
+                  </div>
+                  <div class="faq-answer">
+                    <p>Yes, KingsBuilder is designed to work with all Shopify themes. The pages you create with KingsBuilder are standalone and will inherit your theme's header and footer, but the content area will be fully controlled by KingsBuilder.</p>
+                  </div>
+                </div>
+              </div>
             </div>
           </main>
         </div>
@@ -528,65 +495,39 @@ router.get('/', async (req, res) => {
             }
           }
 
-          // Search functionality
-          const searchInput = document.getElementById('search-input');
-          const pagesTableBody = document.getElementById('pages-table-body');
+          // FAQ accordion functionality
+          const faqQuestions = document.querySelectorAll('.faq-question');
 
-          if (searchInput && pagesTableBody) {
-            searchInput.addEventListener('input', () => {
-              const searchTerm = searchInput.value.toLowerCase();
-              const rows = pagesTableBody.querySelectorAll('tr');
+          faqQuestions.forEach(question => {
+            question.addEventListener('click', () => {
+              const answer = question.nextElementSibling;
+              const isActive = question.classList.contains('active');
 
-              rows.forEach(row => {
-                const title = row.cells[0].textContent.toLowerCase();
-                const handle = row.cells[1].textContent.toLowerCase();
-
-                if (title.includes(searchTerm) || handle.includes(searchTerm)) {
-                  row.style.display = '';
-                } else {
-                  row.style.display = 'none';
-                }
+              // Close all other answers
+              document.querySelectorAll('.faq-question').forEach(q => {
+                q.classList.remove('active');
+                q.nextElementSibling.classList.remove('active');
               });
+
+              // Toggle current answer
+              if (!isActive) {
+                question.classList.add('active');
+                answer.classList.add('active');
+              }
             });
-          }
-
-          // Delete page functionality
-          function deletePage(pageId) {
-            if (confirm('Are you sure you want to delete this page? This action cannot be undone.')) {
-              fetch(`/pages/${pageId}`, {
-                method: 'DELETE',
-                headers: {
-                  'Content-Type': 'application/json'
-                }
-              })
-              .then(response => response.json())
-              .then(data => {
-                if (data.success) {
-                  alert('Page deleted successfully');
-                  window.location.reload();
-                } else {
-                  alert('Error deleting page: ' + data.error);
-                }
-              })
-              .catch(error => {
-                console.error('Error:', error);
-                alert('An error occurred while deleting the page');
-              });
-            }
-          }
+          });
         </script>
       </body>
       </html>
     `);
   } catch (error) {
-    console.error('Dashboard error:', error);
+    console.error('Help error:', error);
     res.status(500).send(`
       <h1>Error</h1>
-      <p>An error occurred while loading the dashboard: ${error.message}</p>
+      <p>An error occurred while loading the help page: ${error.message}</p>
       <pre>${error.stack}</pre>
     `);
   }
 });
 
 module.exports = router;
-

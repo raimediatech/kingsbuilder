@@ -1,18 +1,13 @@
-// api/routes/dashboard.js - Dashboard routes
+// api/routes/templates.js - Templates routes
 const express = require('express');
 const router = express.Router();
-const shopifyApi = require('../shopify');
-const { PageModel } = require('../database');
 
-// Dashboard home page
+// Templates home page
 router.get('/', async (req, res) => {
   try {
     // Get shop from various possible sources
     const shop = req.query.shop || req.shopifyShop || req.headers['x-shopify-shop-domain'] || req.cookies?.shopOrigin;
     
-    // Get access token from various possible sources
-    const accessToken = req.headers['x-shopify-access-token'] || req.shopifyAccessToken || req.cookies?.shopifyAccessToken;
-
     // Set security headers for Shopify iframe embedding
     res.setHeader(
       "Content-Security-Policy",
@@ -22,44 +17,14 @@ router.get('/', async (req, res) => {
     // Remove X-Frame-Options as it's deprecated and causing issues
     res.removeHeader('X-Frame-Options');
 
-    // Get pages from Shopify or database
-    let pages = [];
-
-    if (shop && accessToken) {
-      try {
-        const result = await shopifyApi.getShopifyPages(shop, accessToken);
-        pages = result.pages || [];
-        console.log(`Retrieved ${pages.length} pages from Shopify`);
-      } catch (error) {
-        console.error('Error fetching pages from Shopify:', error);
-        // Fall back to database
-        const dbPages = await PageModel.find({ shop });
-        pages = dbPages.map(page => ({
-          id: page.pageId,
-          title: page.title,
-          handle: page.handle,
-          body_html: page.bodyHtml,
-          published: page.published
-        }));
-        console.log(`Retrieved ${pages.length} pages from database`);
-      }
-    } else {
-      console.log('No shop or access token available, using mock data');
-      pages = [
-        { id: '1', title: 'Homepage', body_html: '<p>Welcome to our store</p>', handle: 'home', published: true },
-        { id: '2', title: 'About Us', body_html: '<p>Our company story</p>', handle: 'about', published: true },
-        { id: '3', title: 'Contact', body_html: '<p>Get in touch</p>', handle: 'contact', published: true }
-      ];
-    }
-
-    // Render the dashboard
+    // Render the templates page
     res.send(`
       <!DOCTYPE html>
       <html lang="en">
       <head>
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>KingsBuilder Dashboard</title>
+        <title>KingsBuilder Templates</title>
         <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
         <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
         <style>
@@ -214,29 +179,6 @@ router.get('/', async (req, res) => {
             margin-right: 8px;
           }
 
-          .btn-outline {
-            background-color: transparent;
-            border: 1px solid var(--primary-color);
-            color: var(--primary-color);
-          }
-
-          .btn-outline:hover {
-            background-color: var(--primary-color);
-            color: white;
-          }
-
-          .btn-success {
-            background-color: var(--success-color);
-          }
-
-          .btn-warning {
-            background-color: var(--warning-color);
-          }
-
-          .btn-danger {
-            background-color: var(--danger-color);
-          }
-
           .card {
             background-color: var(--card-bg);
             border-radius: 10px;
@@ -257,94 +199,55 @@ router.get('/', async (req, res) => {
             font-weight: 600;
           }
 
-          .search-box {
-            position: relative;
-            margin-bottom: 20px;
+          .template-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 20px;
           }
 
-          .search-box input {
-            width: 100%;
-            padding: 12px 20px;
-            padding-left: 40px;
-            border: 1px solid var(--border-color);
-            border-radius: 6px;
-            font-size: 14px;
+          .template-card {
             background-color: var(--bg-color);
-            color: var(--text-color);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            overflow: hidden;
+            transition: transform 0.2s, box-shadow 0.2s;
           }
 
-          .search-box i {
-            position: absolute;
-            left: 15px;
-            top: 50%;
-            transform: translateY(-50%);
-            color: var(--text-color);
-            opacity: 0.5;
+          .template-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
           }
 
-          .table {
-            width: 100%;
-            border-collapse: collapse;
-          }
-
-          .table th, .table td {
-            padding: 12px 15px;
-            text-align: left;
-            border-bottom: 1px solid var(--border-color);
-          }
-
-          .table th {
-            font-weight: 600;
-            color: var(--text-color);
-            opacity: 0.8;
-          }
-
-          .table tr:last-child td {
-            border-bottom: none;
-          }
-
-          .status {
-            display: inline-block;
-            padding: 4px 8px;
-            border-radius: 4px;
-            font-size: 12px;
-            font-weight: 500;
-          }
-
-          .status-published {
-            background-color: rgba(16, 185, 129, 0.1);
-            color: var(--success-color);
-          }
-
-          .status-draft {
-            background-color: rgba(245, 158, 11, 0.1);
-            color: var(--warning-color);
-          }
-
-          .actions {
+          .template-image {
+            height: 200px;
+            background-color: #f0f0f0;
             display: flex;
-            gap: 10px;
-          }
-
-          .action-btn {
-            display: inline-flex;
             align-items: center;
             justify-content: center;
-            width: 32px;
-            height: 32px;
-            border-radius: 6px;
-            background-color: var(--bg-color);
-            color: var(--text-color);
-            border: 1px solid var(--border-color);
-            cursor: pointer;
-            transition: all 0.2s;
-            text-decoration: none;
+            color: #999;
+            font-size: 24px;
           }
 
-          .action-btn:hover {
-            background-color: var(--primary-color);
-            color: white;
-            border-color: var(--primary-color);
+          .template-content {
+            padding: 15px;
+          }
+
+          .template-title {
+            font-size: 16px;
+            font-weight: 600;
+            margin-bottom: 5px;
+          }
+
+          .template-description {
+            font-size: 14px;
+            color: var(--text-color);
+            opacity: 0.7;
+            margin-bottom: 15px;
+          }
+
+          .template-actions {
+            display: flex;
+            justify-content: space-between;
           }
 
           .empty-state {
@@ -378,6 +281,10 @@ router.get('/', async (req, res) => {
             .sidebar {
               display: none;
             }
+
+            .template-grid {
+              grid-template-columns: 1fr;
+            }
           }
         </style>
       </head>
@@ -389,7 +296,7 @@ router.get('/', async (req, res) => {
             </div>
             <ul class="nav-menu">
               <li class="nav-item">
-                <a href="/dashboard?shop=${shop}" class="nav-link active">
+                <a href="/dashboard?shop=${shop}" class="nav-link">
                   <i class="fas fa-home"></i>
                   Dashboard
                 </a>
@@ -401,7 +308,7 @@ router.get('/', async (req, res) => {
                 </a>
               </li>
               <li class="nav-item">
-                <a href="/templates?shop=${shop}" class="nav-link">
+                <a href="/templates?shop=${shop}" class="nav-link active">
                   <i class="fas fa-palette"></i>
                   Templates
                 </a>
@@ -423,74 +330,80 @@ router.get('/', async (req, res) => {
 
           <main class="main-content">
             <div class="header">
-              <h2>Pages</h2>
+              <h2>Templates</h2>
               <div style="display: flex; align-items: center;">
                 <button id="theme-toggle" class="theme-toggle">
                   <i class="fas fa-moon"></i>
                 </button>
-                <a href="/pages/new?shop=${shop}" class="btn">
+                <a href="/templates/new?shop=${shop}" class="btn">
                   <i class="fas fa-plus"></i>
-                  Create Page
+                  Create Template
                 </a>
               </div>
             </div>
 
             <div class="card">
               <div class="card-header">
-                <h3 class="card-title">All Pages</h3>
+                <h3 class="card-title">Available Templates</h3>
               </div>
 
-              <div class="search-box">
-                <i class="fas fa-search"></i>
-                <input type="text" id="search-input" placeholder="Search pages...">
-              </div>
-
-              ${pages.length > 0 ? `
-                <table class="table">
-                  <thead>
-                    <tr>
-                      <th>Title</th>
-                      <th>Handle</th>
-                      <th>Status</th>
-                      <th>Actions</th>
-                    </tr>
-                  </thead>
-                  <tbody id="pages-table-body">
-                    ${pages.map(page => `
-                      <tr>
-                        <td>${page.title}</td>
-                        <td>${page.handle}</td>
-                        <td>
-                          <span class="status ${page.published ? 'status-published' : 'status-draft'}">
-                            ${page.published ? 'Published' : 'Draft'}
-                          </span>
-                        </td>
-                        <td class="actions">
-                          <a href="/builder/${page.id}?shop=${shop}" class="action-btn" title="Edit">
-                            <i class="fas fa-edit"></i>
-                          </a>
-                          <button class="action-btn" title="Delete" onclick="deletePage('${page.id}')">
-                            <i class="fas fa-trash"></i>
-                          </button>
-                          <a href="https://${shop}/pages/${page.handle}" target="_blank" class="action-btn" title="View">
-                            <i class="fas fa-external-link-alt"></i>
-                          </a>
-                        </td>
-                      </tr>
-                    `).join('')}
-                  </tbody>
-                </table>
-              ` : `
-                <div class="empty-state">
-                  <i class="fas fa-file-alt"></i>
-                  <h3>No pages found</h3>
-                  <p>Create your first page to get started</p>
-                  <a href="/pages/new?shop=${shop}" class="btn">
-                    <i class="fas fa-plus"></i>
-                    Create Page
-                  </a>
+              <div class="template-grid">
+                <div class="template-card">
+                  <div class="template-image">
+                    <i class="fas fa-image"></i>
+                  </div>
+                  <div class="template-content">
+                    <h4 class="template-title">Landing Page</h4>
+                    <p class="template-description">A clean, modern landing page template with hero section and features.</p>
+                    <div class="template-actions">
+                      <a href="/builder/new?template=landing&shop=${shop}" class="btn btn-sm">Use Template</a>
+                      <button class="btn btn-sm btn-outline">Preview</button>
+                    </div>
+                  </div>
                 </div>
-              `}
+
+                <div class="template-card">
+                  <div class="template-image">
+                    <i class="fas fa-image"></i>
+                  </div>
+                  <div class="template-content">
+                    <h4 class="template-title">About Us</h4>
+                    <p class="template-description">Tell your brand story with this professional about page template.</p>
+                    <div class="template-actions">
+                      <a href="/builder/new?template=about&shop=${shop}" class="btn btn-sm">Use Template</a>
+                      <button class="btn btn-sm btn-outline">Preview</button>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="template-card">
+                  <div class="template-image">
+                    <i class="fas fa-image"></i>
+                  </div>
+                  <div class="template-content">
+                    <h4 class="template-title">Contact</h4>
+                    <p class="template-description">A contact page with form, map and business information.</p>
+                    <div class="template-actions">
+                      <a href="/builder/new?template=contact&shop=${shop}" class="btn btn-sm">Use Template</a>
+                      <button class="btn btn-sm btn-outline">Preview</button>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="template-card">
+                  <div class="template-image">
+                    <i class="fas fa-image"></i>
+                  </div>
+                  <div class="template-content">
+                    <h4 class="template-title">FAQ</h4>
+                    <p class="template-description">Answer common questions with this organized FAQ template.</p>
+                    <div class="template-actions">
+                      <a href="/builder/new?template=faq&shop=${shop}" class="btn btn-sm">Use Template</a>
+                      <button class="btn btn-sm btn-outline">Preview</button>
+                    </div>
+                  </div>
+                </div>
+              </div>
             </div>
           </main>
         </div>
@@ -527,66 +440,18 @@ router.get('/', async (req, res) => {
               themeIcon.classList.add('fa-moon');
             }
           }
-
-          // Search functionality
-          const searchInput = document.getElementById('search-input');
-          const pagesTableBody = document.getElementById('pages-table-body');
-
-          if (searchInput && pagesTableBody) {
-            searchInput.addEventListener('input', () => {
-              const searchTerm = searchInput.value.toLowerCase();
-              const rows = pagesTableBody.querySelectorAll('tr');
-
-              rows.forEach(row => {
-                const title = row.cells[0].textContent.toLowerCase();
-                const handle = row.cells[1].textContent.toLowerCase();
-
-                if (title.includes(searchTerm) || handle.includes(searchTerm)) {
-                  row.style.display = '';
-                } else {
-                  row.style.display = 'none';
-                }
-              });
-            });
-          }
-
-          // Delete page functionality
-          function deletePage(pageId) {
-            if (confirm('Are you sure you want to delete this page? This action cannot be undone.')) {
-              fetch(`/pages/${pageId}`, {
-                method: 'DELETE',
-                headers: {
-                  'Content-Type': 'application/json'
-                }
-              })
-              .then(response => response.json())
-              .then(data => {
-                if (data.success) {
-                  alert('Page deleted successfully');
-                  window.location.reload();
-                } else {
-                  alert('Error deleting page: ' + data.error);
-                }
-              })
-              .catch(error => {
-                console.error('Error:', error);
-                alert('An error occurred while deleting the page');
-              });
-            }
-          }
         </script>
       </body>
       </html>
     `);
   } catch (error) {
-    console.error('Dashboard error:', error);
+    console.error('Templates error:', error);
     res.status(500).send(`
       <h1>Error</h1>
-      <p>An error occurred while loading the dashboard: ${error.message}</p>
+      <p>An error occurred while loading the templates page: ${error.message}</p>
       <pre>${error.stack}</pre>
     `);
   }
 });
 
 module.exports = router;
-

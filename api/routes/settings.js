@@ -1,18 +1,13 @@
-// api/routes/dashboard.js - Dashboard routes
+// api/routes/settings.js - Settings routes
 const express = require('express');
 const router = express.Router();
-const shopifyApi = require('../shopify');
-const { PageModel } = require('../database');
 
-// Dashboard home page
+// Settings home page
 router.get('/', async (req, res) => {
   try {
     // Get shop from various possible sources
     const shop = req.query.shop || req.shopifyShop || req.headers['x-shopify-shop-domain'] || req.cookies?.shopOrigin;
     
-    // Get access token from various possible sources
-    const accessToken = req.headers['x-shopify-access-token'] || req.shopifyAccessToken || req.cookies?.shopifyAccessToken;
-
     // Set security headers for Shopify iframe embedding
     res.setHeader(
       "Content-Security-Policy",
@@ -22,44 +17,14 @@ router.get('/', async (req, res) => {
     // Remove X-Frame-Options as it's deprecated and causing issues
     res.removeHeader('X-Frame-Options');
 
-    // Get pages from Shopify or database
-    let pages = [];
-
-    if (shop && accessToken) {
-      try {
-        const result = await shopifyApi.getShopifyPages(shop, accessToken);
-        pages = result.pages || [];
-        console.log(`Retrieved ${pages.length} pages from Shopify`);
-      } catch (error) {
-        console.error('Error fetching pages from Shopify:', error);
-        // Fall back to database
-        const dbPages = await PageModel.find({ shop });
-        pages = dbPages.map(page => ({
-          id: page.pageId,
-          title: page.title,
-          handle: page.handle,
-          body_html: page.bodyHtml,
-          published: page.published
-        }));
-        console.log(`Retrieved ${pages.length} pages from database`);
-      }
-    } else {
-      console.log('No shop or access token available, using mock data');
-      pages = [
-        { id: '1', title: 'Homepage', body_html: '<p>Welcome to our store</p>', handle: 'home', published: true },
-        { id: '2', title: 'About Us', body_html: '<p>Our company story</p>', handle: 'about', published: true },
-        { id: '3', title: 'Contact', body_html: '<p>Get in touch</p>', handle: 'contact', published: true }
-      ];
-    }
-
-    // Render the dashboard
+    // Render the settings page
     res.send(`
       <!DOCTYPE html>
       <html lang="en">
       <head>
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>KingsBuilder Dashboard</title>
+        <title>KingsBuilder Settings</title>
         <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
         <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
         <style>
@@ -214,29 +179,6 @@ router.get('/', async (req, res) => {
             margin-right: 8px;
           }
 
-          .btn-outline {
-            background-color: transparent;
-            border: 1px solid var(--primary-color);
-            color: var(--primary-color);
-          }
-
-          .btn-outline:hover {
-            background-color: var(--primary-color);
-            color: white;
-          }
-
-          .btn-success {
-            background-color: var(--success-color);
-          }
-
-          .btn-warning {
-            background-color: var(--warning-color);
-          }
-
-          .btn-danger {
-            background-color: var(--danger-color);
-          }
-
           .card {
             background-color: var(--card-bg);
             border-radius: 10px;
@@ -257,15 +199,19 @@ router.get('/', async (req, res) => {
             font-weight: 600;
           }
 
-          .search-box {
-            position: relative;
+          .form-group {
             margin-bottom: 20px;
           }
 
-          .search-box input {
+          .form-label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 500;
+          }
+
+          .form-control {
             width: 100%;
-            padding: 12px 20px;
-            padding-left: 40px;
+            padding: 10px 15px;
             border: 1px solid var(--border-color);
             border-radius: 6px;
             font-size: 14px;
@@ -273,101 +219,52 @@ router.get('/', async (req, res) => {
             color: var(--text-color);
           }
 
-          .search-box i {
-            position: absolute;
-            left: 15px;
-            top: 50%;
-            transform: translateY(-50%);
-            color: var(--text-color);
-            opacity: 0.5;
-          }
-
-          .table {
-            width: 100%;
-            border-collapse: collapse;
-          }
-
-          .table th, .table td {
-            padding: 12px 15px;
-            text-align: left;
-            border-bottom: 1px solid var(--border-color);
-          }
-
-          .table th {
-            font-weight: 600;
-            color: var(--text-color);
-            opacity: 0.8;
-          }
-
-          .table tr:last-child td {
-            border-bottom: none;
-          }
-
-          .status {
-            display: inline-block;
-            padding: 4px 8px;
-            border-radius: 4px;
-            font-size: 12px;
-            font-weight: 500;
-          }
-
-          .status-published {
-            background-color: rgba(16, 185, 129, 0.1);
-            color: var(--success-color);
-          }
-
-          .status-draft {
-            background-color: rgba(245, 158, 11, 0.1);
-            color: var(--warning-color);
-          }
-
-          .actions {
-            display: flex;
-            gap: 10px;
-          }
-
-          .action-btn {
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            width: 32px;
-            height: 32px;
-            border-radius: 6px;
-            background-color: var(--bg-color);
-            color: var(--text-color);
-            border: 1px solid var(--border-color);
-            cursor: pointer;
-            transition: all 0.2s;
-            text-decoration: none;
-          }
-
-          .action-btn:hover {
-            background-color: var(--primary-color);
-            color: white;
+          .form-control:focus {
+            outline: none;
             border-color: var(--primary-color);
           }
 
-          .empty-state {
-            text-align: center;
-            padding: 40px 0;
-          }
-
-          .empty-state i {
-            font-size: 48px;
-            color: var(--border-color);
-            margin-bottom: 20px;
-          }
-
-          .empty-state h3 {
-            font-size: 18px;
-            font-weight: 600;
+          .form-check {
+            display: flex;
+            align-items: center;
             margin-bottom: 10px;
           }
 
-          .empty-state p {
+          .form-check-input {
+            margin-right: 10px;
+          }
+
+          .form-text {
+            font-size: 12px;
             color: var(--text-color);
             opacity: 0.7;
+            margin-top: 5px;
+          }
+
+          .settings-tabs {
+            display: flex;
+            border-bottom: 1px solid var(--border-color);
             margin-bottom: 20px;
+          }
+
+          .settings-tab {
+            padding: 10px 20px;
+            cursor: pointer;
+            border-bottom: 2px solid transparent;
+            font-weight: 500;
+          }
+
+          .settings-tab.active {
+            border-bottom-color: var(--primary-color);
+            color: var(--primary-color);
+          }
+
+          .tab-content {
+            display: none;
+          }
+
+          .tab-content.active {
+            display: block;
           }
 
           @media (max-width: 768px) {
@@ -389,7 +286,7 @@ router.get('/', async (req, res) => {
             </div>
             <ul class="nav-menu">
               <li class="nav-item">
-                <a href="/dashboard?shop=${shop}" class="nav-link active">
+                <a href="/dashboard?shop=${shop}" class="nav-link">
                   <i class="fas fa-home"></i>
                   Dashboard
                 </a>
@@ -407,7 +304,7 @@ router.get('/', async (req, res) => {
                 </a>
               </li>
               <li class="nav-item">
-                <a href="/settings?shop=${shop}" class="nav-link">
+                <a href="/settings?shop=${shop}" class="nav-link active">
                   <i class="fas fa-cog"></i>
                   Settings
                 </a>
@@ -423,74 +320,108 @@ router.get('/', async (req, res) => {
 
           <main class="main-content">
             <div class="header">
-              <h2>Pages</h2>
+              <h2>Settings</h2>
               <div style="display: flex; align-items: center;">
                 <button id="theme-toggle" class="theme-toggle">
                   <i class="fas fa-moon"></i>
                 </button>
-                <a href="/pages/new?shop=${shop}" class="btn">
-                  <i class="fas fa-plus"></i>
-                  Create Page
-                </a>
+                <button id="save-settings" class="btn">
+                  <i class="fas fa-save"></i>
+                  Save Settings
+                </button>
               </div>
             </div>
 
+            <div class="settings-tabs">
+              <div class="settings-tab active" data-tab="general">General</div>
+              <div class="settings-tab" data-tab="appearance">Appearance</div>
+              <div class="settings-tab" data-tab="advanced">Advanced</div>
+            </div>
+
             <div class="card">
-              <div class="card-header">
-                <h3 class="card-title">All Pages</h3>
-              </div>
-
-              <div class="search-box">
-                <i class="fas fa-search"></i>
-                <input type="text" id="search-input" placeholder="Search pages...">
-              </div>
-
-              ${pages.length > 0 ? `
-                <table class="table">
-                  <thead>
-                    <tr>
-                      <th>Title</th>
-                      <th>Handle</th>
-                      <th>Status</th>
-                      <th>Actions</th>
-                    </tr>
-                  </thead>
-                  <tbody id="pages-table-body">
-                    ${pages.map(page => `
-                      <tr>
-                        <td>${page.title}</td>
-                        <td>${page.handle}</td>
-                        <td>
-                          <span class="status ${page.published ? 'status-published' : 'status-draft'}">
-                            ${page.published ? 'Published' : 'Draft'}
-                          </span>
-                        </td>
-                        <td class="actions">
-                          <a href="/builder/${page.id}?shop=${shop}" class="action-btn" title="Edit">
-                            <i class="fas fa-edit"></i>
-                          </a>
-                          <button class="action-btn" title="Delete" onclick="deletePage('${page.id}')">
-                            <i class="fas fa-trash"></i>
-                          </button>
-                          <a href="https://${shop}/pages/${page.handle}" target="_blank" class="action-btn" title="View">
-                            <i class="fas fa-external-link-alt"></i>
-                          </a>
-                        </td>
-                      </tr>
-                    `).join('')}
-                  </tbody>
-                </table>
-              ` : `
-                <div class="empty-state">
-                  <i class="fas fa-file-alt"></i>
-                  <h3>No pages found</h3>
-                  <p>Create your first page to get started</p>
-                  <a href="/pages/new?shop=${shop}" class="btn">
-                    <i class="fas fa-plus"></i>
-                    Create Page
-                  </a>
+              <div id="general-tab" class="tab-content active">
+                <div class="form-group">
+                  <label class="form-label">Store Name</label>
+                  <input type="text" class="form-control" value="${shop}" disabled>
+                  <small class="form-text">This is your Shopify store name.</small>
                 </div>
-              `}
+
+                <div class="form-group">
+                  <label class="form-label">Default Page Title</label>
+                  <input type="text" class="form-control" placeholder="Enter default page title">
+                  <small class="form-text">This title will be used for new pages if no title is specified.</small>
+                </div>
+
+                <div class="form-group">
+                  <label class="form-label">Default Meta Description</label>
+                  <textarea class="form-control" rows="3" placeholder="Enter default meta description"></textarea>
+                  <small class="form-text">This description will be used for SEO if no description is specified.</small>
+                </div>
+
+                <div class="form-group">
+                  <label class="form-check">
+                    <input type="checkbox" class="form-check-input" checked>
+                    Auto-publish pages
+                  </label>
+                  <small class="form-text">When enabled, new pages will be automatically published.</small>
+                </div>
+              </div>
+
+              <div id="appearance-tab" class="tab-content">
+                <div class="form-group">
+                  <label class="form-label">Theme</label>
+                  <select class="form-control">
+                    <option value="light">Light</option>
+                    <option value="dark">Dark</option>
+                    <option value="system">System Default</option>
+                  </select>
+                  <small class="form-text">Choose the theme for the KingsBuilder dashboard.</small>
+                </div>
+
+                <div class="form-group">
+                  <label class="form-label">Primary Color</label>
+                  <input type="color" class="form-control" value="#000000">
+                  <small class="form-text">This color will be used for buttons and accents.</small>
+                </div>
+
+                <div class="form-group">
+                  <label class="form-check">
+                    <input type="checkbox" class="form-check-input" checked>
+                    Show page previews
+                  </label>
+                  <small class="form-text">When enabled, page previews will be shown in the dashboard.</small>
+                </div>
+              </div>
+
+              <div id="advanced-tab" class="tab-content">
+                <div class="form-group">
+                  <label class="form-label">Custom CSS</label>
+                  <textarea class="form-control" rows="5" placeholder="Enter custom CSS"></textarea>
+                  <small class="form-text">This CSS will be applied to all pages created with KingsBuilder.</small>
+                </div>
+
+                <div class="form-group">
+                  <label class="form-label">Custom JavaScript</label>
+                  <textarea class="form-control" rows="5" placeholder="Enter custom JavaScript"></textarea>
+                  <small class="form-text">This JavaScript will be applied to all pages created with KingsBuilder.</small>
+                </div>
+
+                <div class="form-group">
+                  <label class="form-check">
+                    <input type="checkbox" class="form-check-input">
+                    Enable developer mode
+                  </label>
+                  <small class="form-text">When enabled, additional developer options will be available.</small>
+                </div>
+
+                <div class="form-group">
+                  <label class="form-check">
+                    <input type="checkbox" class="form-check-input">
+                    Clear cache
+                  </label>
+                  <small class="form-text">Clear the KingsBuilder cache to resolve any display issues.</small>
+                </div>
+              </div>
             </div>
           </main>
         </div>
@@ -528,65 +459,40 @@ router.get('/', async (req, res) => {
             }
           }
 
-          // Search functionality
-          const searchInput = document.getElementById('search-input');
-          const pagesTableBody = document.getElementById('pages-table-body');
+          // Settings tabs functionality
+          const tabs = document.querySelectorAll('.settings-tab');
+          const tabContents = document.querySelectorAll('.tab-content');
 
-          if (searchInput && pagesTableBody) {
-            searchInput.addEventListener('input', () => {
-              const searchTerm = searchInput.value.toLowerCase();
-              const rows = pagesTableBody.querySelectorAll('tr');
-
-              rows.forEach(row => {
-                const title = row.cells[0].textContent.toLowerCase();
-                const handle = row.cells[1].textContent.toLowerCase();
-
-                if (title.includes(searchTerm) || handle.includes(searchTerm)) {
-                  row.style.display = '';
-                } else {
-                  row.style.display = 'none';
-                }
-              });
+          tabs.forEach(tab => {
+            tab.addEventListener('click', () => {
+              const tabId = tab.getAttribute('data-tab');
+              
+              // Remove active class from all tabs and contents
+              tabs.forEach(t => t.classList.remove('active'));
+              tabContents.forEach(c => c.classList.remove('active'));
+              
+              // Add active class to clicked tab and corresponding content
+              tab.classList.add('active');
+              document.getElementById(`${tabId}-tab`).classList.add('active');
             });
-          }
+          });
 
-          // Delete page functionality
-          function deletePage(pageId) {
-            if (confirm('Are you sure you want to delete this page? This action cannot be undone.')) {
-              fetch(`/pages/${pageId}`, {
-                method: 'DELETE',
-                headers: {
-                  'Content-Type': 'application/json'
-                }
-              })
-              .then(response => response.json())
-              .then(data => {
-                if (data.success) {
-                  alert('Page deleted successfully');
-                  window.location.reload();
-                } else {
-                  alert('Error deleting page: ' + data.error);
-                }
-              })
-              .catch(error => {
-                console.error('Error:', error);
-                alert('An error occurred while deleting the page');
-              });
-            }
-          }
+          // Save settings functionality
+          document.getElementById('save-settings').addEventListener('click', () => {
+            alert('Settings saved successfully!');
+          });
         </script>
       </body>
       </html>
     `);
   } catch (error) {
-    console.error('Dashboard error:', error);
+    console.error('Settings error:', error);
     res.status(500).send(`
       <h1>Error</h1>
-      <p>An error occurred while loading the dashboard: ${error.message}</p>
+      <p>An error occurred while loading the settings page: ${error.message}</p>
       <pre>${error.stack}</pre>
     `);
   }
 });
 
 module.exports = router;
-
