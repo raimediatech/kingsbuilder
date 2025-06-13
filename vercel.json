@@ -12,6 +12,14 @@
   ],
   "routes": [
     {
+      "src": "/app",
+      "dest": "/api/index.js"
+    },
+    {
+      "src": "/app/(.*)",
+      "dest": "/api/index.js"
+    },
+    {
       "src": "/pages",
       "dest": "/api/index.js"
     },
@@ -65,14 +73,6 @@
     },
     {
       "src": "/api/pages",
-      "dest": "/api/index.js"
-    },
-    {
-      "src": "/app.*",
-      "dest": "/api/index.js"
-    },
-    {
-      "src": "/app/(.*)",
       "dest": "/api/index.js"
     },
     {
