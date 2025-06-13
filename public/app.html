@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>KingsBuilder</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <script>
+    // Get the shop parameter from the URL
+    const urlParams = new URLSearchParams(window.location.search);
+    const shop = urlParams.get('shop');
+    
+    // Redirect to the dashboard with the shop parameter
+    if (shop) {
+      window.location.href = '/dashboard?shop=' + shop;
+    } else {
+      window.location.href = '/install';
+    }
+  </script>
+  <style>
+    body {
+      font-family: sans-serif;
+      text-align: center;
+      padding: 50px;
+    }
+    .loader {
+      border: 5px solid #f3f3f3;
+      border-top: 5px solid #000;
+      border-radius: 50%;
+      width: 50px;
+      height: 50px;
+      animation: spin 1s linear infinite;
+      margin: 20px auto;
+    }
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+  </style>
+</head>
+<body>
+  <h1>KingsBuilder</h1>
+  <p>Redirecting to dashboard...</p>
+  <div class="loader"></div>
+</body>
+</html>
