@@ -149,23 +149,48 @@ try {
 }
 
 // Register builder routes
-app.get('/builder/:pageId', (req, res) => {
-  const { pageId } = req.params;
-  const shop = req.query.shop || req.cookies?.shopOrigin;
-
-  if (!shop) {
-    return res.status(400).send('Shop parameter is required');
-  }
-
-  // Serve the builder.js file as a route handler
-  try {
-    const builderHandler = require('./builder.js');
-    builderHandler(req, res);
-  } catch (error) {
-    console.error('Error loading builder handler:', error);
-    res.status(500).send('Error loading builder');
-  }
-});
+try {
+  const builderRoutes = require('./builder.js');
+  app.use('/builder', builderRoutes);
+  console.log('Builder routes registered successfully');
+} catch (error) {
+  console.error('Error loading builder routes:', error);
+  
+  // Fallback route if builder.js fails to load
+  app.get('/builder/:pageId', (req, res) => {
+    const { pageId } = req.params;
+    const shop = req.query.shop || req.cookies?.shopOrigin;
+    
+    if (!shop) {
+      return res.status(400).send('Shop parameter is required');
+    }
+    
+    res.status(500).send(`
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <title>KingsBuilder - Error</title>
+          <meta name="viewport" content="width=device-width, initial-scale=1.0">
+          <style>
+            body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; margin: 0; padding: 20px; background: #f6f6f7; text-align: center; }
+            .error-container { max-width: 600px; margin: 100px auto; background: white; padding: 30px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+            h1 { color: #333; margin-bottom: 20px; }
+            p { color: #666; line-height: 1.6; margin-bottom: 20px; }
+            .btn { display: inline-block; background: #6366f1; color: white; padding: 10px 20px; border-radius: 4px; text-decoration: none; }
+          </style>
+        </head>
+        <body>
+          <div class="error-container">
+            <h1>Page Builder Error</h1>
+            <p>We're experiencing some technical issues with the page builder. Our team has been notified.</p>
+            <p>Please try again later or return to the dashboard.</p>
+            <a href="/dashboard?shop=${shop}" class="btn">Return to Dashboard</a>
+          </div>
+        </body>
+      </html>
+    `);
+  });
+}
 
 // Import pages routes
 try {
