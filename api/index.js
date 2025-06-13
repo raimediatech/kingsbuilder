@@ -7,6 +7,7 @@ const app = express();
 // Load environment variables
 try {
   require('dotenv').config();
+  console.log('Environment variables loaded');
 } catch (error) {
   console.log('No .env file found, using environment variables from the system');
 }
@@ -45,6 +46,19 @@ app.get('/api/health', (req, res) => {
     timestamp: new Date().toISOString(),
     environment: process.env.NODE_ENV || 'development'
   });
+});
+
+// App route for Shopify admin
+app.get('/app', (req, res) => {
+  const shop = req.query.shop || req.cookies?.shopOrigin;
+  
+  if (shop) {
+    // Redirect to dashboard with shop parameter
+    res.redirect('/dashboard?shop=' + shop);
+  } else {
+    // If no shop parameter, redirect to install
+    res.redirect('/install');
+  }
 });
 
 // Import dashboard routes
@@ -130,4 +144,3 @@ app.get('/', (req, res) => {
 
 // Export for Vercel
 module.exports = app;
-
