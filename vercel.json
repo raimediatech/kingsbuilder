@@ -36,6 +36,30 @@
       "dest": "/api/index.js"
     },
     {
+      "src": "/templates",
+      "dest": "/api/index.js"
+    },
+    {
+      "src": "/templates/(.*)",
+      "dest": "/api/index.js"
+    },
+    {
+      "src": "/settings",
+      "dest": "/api/index.js"
+    },
+    {
+      "src": "/settings/(.*)",
+      "dest": "/api/index.js"
+    },
+    {
+      "src": "/help",
+      "dest": "/api/index.js"
+    },
+    {
+      "src": "/help/(.*)",
+      "dest": "/api/index.js"
+    },
+    {
       "src": "/api/health",
       "dest": "/api/index.js"
     },
