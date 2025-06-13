@@ -4,7 +4,6 @@ require('dotenv').config();
 
 // Use the DATABASE_URL from environment variables
 const DATABASE_URL = process.env.DATABASE_URL || process.env.MONGODB_URI;
-
 let db = null;
 let client = null;
 
@@ -14,44 +13,48 @@ async function connectToDatabase(retryCount = 3, retryDelay = 2000) {
     if (db) return db;
     
     console.log('Connecting to MongoDB...');
-    
+
     if (!DATABASE_URL) {
       console.error('No MongoDB connection string provided in environment variables');
       console.log('Using mock database for now');
       return null;
     }
-    
-    // Add timeout for Vercel serverless functions
-    const connectionTimeout = setTimeout(() => {
-      console.log('MongoDB connection timeout reached - using mock data');
-      return null;
-    }, 5000);
-    
-    try {
-      client = new MongoClient(DATABASE_URL, {
-        useNewUrlParser: true,
-        useUnifiedTopology: true,
-        serverSelectionTimeoutMS: 5000, // 5 second timeout
-        connectTimeoutMS: 5000,
-        socketTimeoutMS: 15000
-      });
-      
-      await client.connect();
-      clearTimeout(connectionTimeout);
-      
-      db = client.db('kingsbuilder');
-      
-      // Test the connection with a simple query
-      await db.command({ ping: 1 });
-      console.log('Connected to MongoDB successfully');
-      
-      return db;
-    } catch (connectionError) {
-      clearTimeout(connectionTimeout);
-      console.error(`Failed to connect to MongoDB:`, connectionError);
-      console.log('Using mock database');
-      return null;
-    }
+
+    // Create a promise that will resolve with the database or reject after timeout
+    const dbPromise = new Promise(async (resolve, reject) => {
+      try {
+        client = new MongoClient(DATABASE_URL, {
+          useNewUrlParser: true,
+          useUnifiedTopology: true,
+          serverSelectionTimeoutMS: 3000, // 3 second timeout
+          connectTimeoutMS: 3000,
+          socketTimeoutMS: 5000
+        });
+
+        await client.connect();
+        db = client.db('kingsbuilder');
+
+        // Test the connection with a simple query
+        await db.command({ ping: 1 });
+        console.log('Connected to MongoDB successfully');
+        resolve(db);
+      } catch (connectionError) {
+        console.error(`Failed to connect to MongoDB:`, connectionError);
+        console.log('Using mock database');
+        resolve(null); // Resolve with null instead of rejecting to avoid crashing
+      }
+    });
+
+    // Create a timeout promise
+    const timeoutPromise = new Promise((resolve) => {
+      setTimeout(() => {
+        console.log('MongoDB connection timeout reached - using mock data');
+        resolve(null);
+      }, 3000); // 3 second timeout
+    });
+
+    // Race the database connection against the timeout
+    return Promise.race([dbPromise, timeoutPromise]);
   } catch (error) {
     console.error('Unexpected error in database connection:', error);
     console.log('Using mock database');
@@ -64,7 +67,7 @@ class PageModel {
   static async findByShop(shop, filters = {}) {
     try {
       if (!db) return [];
-      
+
       const query = { shop, ...filters };
       const pages = await db.collection('pages').find(query).toArray();
       return pages;
@@ -73,11 +76,11 @@ class PageModel {
       return [];
     }
   }
-  
+
   static async findOne(shop, handle) {
     try {
       if (!db) return null;
-      
+
       const page = await db.collection('pages').findOne({ shop, handle });
       return page;
     } catch (error) {
@@ -85,7 +88,7 @@ class PageModel {
       return null;
     }
   }
-  
+
   static async create(pageData) {
     try {
       const now = new Date();
@@ -94,12 +97,12 @@ class PageModel {
         createdAt: now,
         updatedAt: now
       };
-      
+
       if (!db) {
         console.error('No database connection available');
         throw new Error('Database connection not available');
       }
-      
+
       const result = await db.collection('pages').insertOne(page);
       return { ...page, _id: result.insertedId };
     } catch (error) {
@@ -107,32 +110,32 @@ class PageModel {
       throw error;
     }
   }
-  
+
   static async update(shop, handle, updateData) {
     try {
       if (!db) return true; // Mock success for demo
-      
+
       const result = await db.collection('pages').updateOne(
         { shop, handle },
-        { 
-          $set: { 
-            ...updateData, 
-            updatedAt: new Date() 
-          } 
+        {
+          $set: {
+            ...updateData,
+            updatedAt: new Date()
+          }
         }
       );
-      
+
       return result.matchedCount > 0;
     } catch (error) {
       console.error('Error updating page:', error);
       return false;
     }
   }
-  
+
   static async delete(shop, handle) {
     try {
       if (!db) return true; // Mock success for demo
-      
+
       const result = await db.collection('pages').deleteOne({ shop, handle });
       return result.deletedCount > 0;
     } catch (error) {
@@ -140,44 +143,44 @@ class PageModel {
       return false;
     }
   }
-  
+
   static async publish(shop, handle) {
     try {
       if (!db) return true; // Mock success for demo
-      
+
       const result = await db.collection('pages').updateOne(
         { shop, handle },
-        { 
-          $set: { 
+        {
+          $set: {
             status: 'published',
             publishedAt: new Date(),
-            updatedAt: new Date() 
-          } 
+            updatedAt: new Date()
+          }
         }
       );
-      
+
       return result.matchedCount > 0;
     } catch (error) {
       console.error('Error publishing page:', error);
       return false;
     }
   }
-  
+
   static async unpublish(shop, handle) {
     try {
       if (!db) return true; // Mock success for demo
-      
+
       const result = await db.collection('pages').updateOne(
         { shop, handle },
-        { 
-          $set: { 
+        {
+          $set: {
             status: 'draft',
-            updatedAt: new Date() 
+            updatedAt: new Date()
           },
           $unset: { publishedAt: 1 }
         }
       );
-      
+
       return result.matchedCount > 0;
     } catch (error) {
       console.error('Error unpublishing page:', error);
@@ -191,14 +194,14 @@ class AnalyticsModel {
   static async recordPageView(shop, handle, metadata = {}) {
     try {
       if (!db) return true; // Mock success for demo
-      
+
       const view = {
         shop,
         handle,
         timestamp: new Date(),
         ...metadata
       };
-      
+
       await db.collection('analytics').insertOne(view);
       return true;
     } catch (error) {
@@ -206,7 +209,7 @@ class AnalyticsModel {
       return false;
     }
   }
-  
+
   static async getPageStats(shop, handle, days = 30) {
     try {
       if (!db) {
@@ -222,10 +225,10 @@ class AnalyticsModel {
           }))
         };
       }
-      
+
       const startDate = new Date();
       startDate.setDate(startDate.getDate() - days);
-      
+
       const pipeline = [
         {
           $match: {
@@ -248,9 +251,9 @@ class AnalyticsModel {
           }
         }
       ];
-      
+
       const stats = await db.collection('analytics').aggregate(pipeline).toArray();
-      
+
       // Get daily views
       const dailyPipeline = [
         {
@@ -275,9 +278,9 @@ class AnalyticsModel {
           $sort: { _id: 1 }
         }
       ];
-      
+
       const dailyViews = await db.collection('analytics').aggregate(dailyPipeline).toArray();
-      
+
       return {
         totalViews: stats[0]?.totalViews || 0,
         uniqueViews: stats[0]?.uniqueViews || 0,
@@ -299,7 +302,7 @@ class AnalyticsModel {
       };
     }
   }
-  
+
   static async getShopStats(shop, days = 30) {
     try {
       if (!db) {
@@ -314,19 +317,19 @@ class AnalyticsModel {
           ]
         };
       }
-      
+
       const startDate = new Date();
       startDate.setDate(startDate.getDate() - days);
-      
+
       // Get total pages
       const totalPages = await db.collection('pages').countDocuments({ shop });
-      
+
       // Get total views
       const totalViews = await db.collection('analytics').countDocuments({
         shop,
         timestamp: { $gte: startDate }
       });
-      
+
       // Get top pages
       const topPagesPipeline = [
         {
@@ -348,27 +351,27 @@ class AnalyticsModel {
           $limit: 5
         }
       ];
-      
+
       const topPagesData = await db.collection('analytics').aggregate(topPagesPipeline).toArray();
-      
+
       // Get page titles
       const handles = topPagesData.map(p => p._id);
       const pages = await db.collection('pages').find(
         { shop, handle: { $in: handles } },
         { projection: { handle: 1, title: 1 } }
       ).toArray();
-      
+
       const pageMap = pages.reduce((acc, page) => {
         acc[page.handle] = page.title;
         return acc;
       }, {});
-      
+
       const topPages = topPagesData.map(p => ({
         handle: p._id,
         title: pageMap[p._id] || p._id,
         views: p.views
       }));
-      
+
       return {
         totalPages,
         totalViews,

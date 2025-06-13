@@ -108,12 +108,12 @@ app.use((req, res, next) => {
     "Content-Security-Policy",
     "frame-ancestors 'self' https://*.myshopify.com https://*.shopify.com; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.shopify.com;"
   );
-  
+
   // Allow scripts to run in iframe
   res.setHeader("X-Frame-Options", "ALLOW-FROM https://*.myshopify.com https://*.shopify.com");
-  
+
   // Remove sandbox restrictions that are blocking scripts
-  
+
   next();
 });
 
@@ -152,16 +152,61 @@ try {
 app.get('/builder/:pageId', (req, res) => {
   const { pageId } = req.params;
   const shop = req.query.shop || req.cookies?.shopOrigin;
-  
+
   if (!shop) {
     return res.status(400).send('Shop parameter is required');
   }
-  
+
+  // Set a timeout to prevent Vercel function timeout
+  const responseTimeout = setTimeout(() => {
+    console.log('Builder route timeout reached - sending simplified response');
+    res.send(`
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <title>KingsBuilder - Page Builder</title>
+          <meta name="viewport" content="width=device-width, initial-scale=1.0">
+          <style>
+            body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; margin: 0; padding: 20px; background: #f6f6f7; text-align: center; }
+            .error-container { max-width: 600px; margin: 100px auto; background: white; padding: 30px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+            h1 { color: #333; margin-bottom: 20px; }
+            p { color: #666; line-height: 1.6; margin-bottom: 20px; }
+            .btn { display: inline-block; background: #6366f1; color: white; padding: 10px 20px; border-radius: 4px; text-decoration: none; }
+          </style>
+        </head>
+        <body>
+          <div class="error-container">
+            <h1>Page Builder Loading Issue</h1>
+            <p>We're experiencing some temporary issues with the page builder. This might be due to database connection delays or server load.</p>
+            <p>Please try again in a few moments or return to the dashboard.</p>
+            <a href="/dashboard?shop=${shop}" class="btn">Return to Dashboard</a>
+          </div>
+        </body>
+      </html>
+    `);
+  }, 10000); // 10 second timeout
+
   // Serve the builder.js file as a route handler
   try {
     const builderHandler = require('./builder.js');
-    builderHandler(req, res);
+    
+    // Wrap the handler in a try/catch to prevent crashes
+    try {
+      // Clear the timeout if the handler completes successfully
+      const originalSend = res.send;
+      res.send = function(body) {
+        clearTimeout(responseTimeout);
+        return originalSend.call(this, body);
+      };
+      
+      builderHandler(req, res);
+    } catch (handlerError) {
+      clearTimeout(responseTimeout);
+      console.error('Error in builder handler execution:', handlerError);
+      res.status(500).send('Error in page builder execution');
+    }
   } catch (error) {
+    clearTimeout(responseTimeout);
     console.error('Error loading builder handler:', error);
     res.status(500).send('Error loading builder');
   }
@@ -274,7 +319,7 @@ app.get('/landing', (req, res) => {
 // App route for Shopify admin
 app.get('/app', (req, res) => {
   const shop = req.query.shop || req.cookies?.shopOrigin;
-  
+
   if (shop) {
     // Redirect to dashboard with shop parameter
     res.redirect('/dashboard?shop=' + shop);
