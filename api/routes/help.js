@@ -2,11 +2,15 @@
 const express = require('express');
 const router = express.Router();
 
-// Help home page
-router.get('/', async (req, res) => {
+// Help page
+router.get('/', (req, res) => {
   try {
-    // Get shop from various possible sources
+    // Get shop from query parameter
     const shop = req.query.shop || req.shopifyShop || req.headers['x-shopify-shop-domain'] || req.cookies?.shopOrigin;
+    
+    if (!shop) {
+      return res.redirect('/install');
+    }
     
     // Set security headers for Shopify iframe embedding
     res.setHeader(
@@ -24,7 +28,7 @@ router.get('/', async (req, res) => {
       <head>
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>KingsBuilder Help</title>
+        <title>KingsBuilder - Help</title>
         <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
         <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
         <style>
@@ -35,9 +39,6 @@ router.get('/', async (req, res) => {
             --bg-color: #ffffff;
             --card-bg: #f9f9f9;
             --border-color: #e5e5e5;
-            --success-color: #10b981;
-            --warning-color: #f59e0b;
-            --danger-color: #ef4444;
           }
 
           [data-theme="dark"] {
@@ -47,9 +48,6 @@ router.get('/', async (req, res) => {
             --bg-color: #121212;
             --card-bg: #1e1e1e;
             --border-color: #333333;
-            --success-color: #10b981;
-            --warning-color: #f59e0b;
-            --danger-color: #ef4444;
           }
 
           * {
@@ -199,110 +197,71 @@ router.get('/', async (req, res) => {
             font-weight: 600;
           }
 
-          .help-search {
-            position: relative;
-            margin-bottom: 30px;
-          }
-
-          .help-search input {
-            width: 100%;
-            padding: 15px 20px;
-            padding-left: 50px;
-            border: 1px solid var(--border-color);
-            border-radius: 8px;
-            font-size: 16px;
-            background-color: var(--bg-color);
-            color: var(--text-color);
-          }
-
-          .help-search i {
-            position: absolute;
-            left: 20px;
-            top: 50%;
-            transform: translateY(-50%);
-            color: var(--text-color);
-            opacity: 0.5;
-            font-size: 20px;
-          }
-
-          .help-categories {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
-            gap: 20px;
-            margin-bottom: 30px;
-          }
-
-          .help-category {
-            background-color: var(--bg-color);
-            border: 1px solid var(--border-color);
-            border-radius: 8px;
-            padding: 20px;
-            text-align: center;
-            transition: transform 0.2s, box-shadow 0.2s;
-          }
-
-          .help-category:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
-          }
-
-          .help-category i {
-            font-size: 32px;
-            margin-bottom: 15px;
-            color: var(--primary-color);
-          }
-
-          .help-category h3 {
-            font-size: 18px;
-            font-weight: 600;
-            margin-bottom: 10px;
-          }
-
-          .help-category p {
-            font-size: 14px;
-            color: var(--text-color);
-            opacity: 0.7;
-          }
-
           .faq-item {
-            margin-bottom: 15px;
-            border: 1px solid var(--border-color);
-            border-radius: 8px;
-            overflow: hidden;
+            margin-bottom: 20px;
+            border-bottom: 1px solid var(--border-color);
+            padding-bottom: 20px;
+          }
+
+          .faq-item:last-child {
+            border-bottom: none;
+            margin-bottom: 0;
+            padding-bottom: 0;
           }
 
           .faq-question {
-            padding: 15px 20px;
-            background-color: var(--bg-color);
-            font-weight: 500;
+            font-size: 16px;
+            font-weight: 600;
+            margin-bottom: 10px;
             cursor: pointer;
             display: flex;
             justify-content: space-between;
             align-items: center;
           }
 
-          .faq-question:hover {
-            background-color: var(--card-bg);
-          }
-
-          .faq-answer {
-            padding: 0 20px;
-            max-height: 0;
-            overflow: hidden;
-            transition: max-height 0.3s, padding 0.3s;
-          }
-
-          .faq-answer.active {
-            padding: 15px 20px;
-            max-height: 500px;
-          }
-
           .faq-question i {
             transition: transform 0.3s;
           }
 
-          .faq-question.active i {
+          .faq-answer {
+            display: none;
+            padding: 10px 0;
+            line-height: 1.6;
+          }
+
+          .faq-item.active .faq-question i {
             transform: rotate(180deg);
+          }
+
+          .faq-item.active .faq-answer {
+            display: block;
+          }
+
+          .help-section {
+            margin-bottom: 40px;
+          }
+
+          .help-section h3 {
+            font-size: 18px;
+            font-weight: 600;
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid var(--border-color);
+          }
+
+          .help-section p {
+            margin-bottom: 15px;
+            line-height: 1.6;
+          }
+
+          .help-section ul {
+            margin-left: 20px;
+            margin-bottom: 15px;
+          }
+
+          .help-section li {
+            margin-bottom: 8px;
+            line-height: 1.6;
           }
 
           @media (max-width: 768px) {
@@ -312,10 +271,6 @@ router.get('/', async (req, res) => {
 
             .sidebar {
               display: none;
-            }
-
-            .help-categories {
-              grid-template-columns: 1fr;
             }
           }
         </style>
@@ -362,44 +317,23 @@ router.get('/', async (req, res) => {
 
           <main class="main-content">
             <div class="header">
-              <h2>Help Center</h2>
+              <h2>Help & Support</h2>
               <div style="display: flex; align-items: center;">
                 <button id="theme-toggle" class="theme-toggle">
                   <i class="fas fa-moon"></i>
                 </button>
-                <a href="mailto:support@kingsbuilder.com" class="btn">
-                  <i class="fas fa-envelope"></i>
-                  Contact Support
-                </a>
               </div>
             </div>
 
-            <div class="help-search">
-              <i class="fas fa-search"></i>
-              <input type="text" placeholder="Search for help...">
-            </div>
-
-            <div class="help-categories">
-              <div class="help-category">
-                <i class="fas fa-rocket"></i>
-                <h3>Getting Started</h3>
-                <p>Learn the basics of KingsBuilder</p>
-              </div>
-              <div class="help-category">
-                <i class="fas fa-file-alt"></i>
-                <h3>Page Builder</h3>
-                <p>Create and edit pages</p>
-              </div>
-              <div class="help-category">
-                <i class="fas fa-palette"></i>
-                <h3>Templates</h3>
-                <p>Use and customize templates</p>
-              </div>
-              <div class="help-category">
-                <i class="fas fa-cog"></i>
-                <h3>Settings</h3>
-                <p>Configure your KingsBuilder</p>
-              </div>
+            <div class="help-section">
+              <h3>Getting Started</h3>
+              <p>Welcome to KingsBuilder, the ultimate page builder for your Shopify store. Here's how to get started:</p>
+              <ol>
+                <li>Navigate to the <a href="/pages?shop=${shop}">Pages</a> section to create your first page.</li>
+                <li>Choose from our pre-designed <a href="/templates?shop=${shop}">Templates</a> or start from scratch.</li>
+                <li>Use the drag-and-drop builder to customize your page.</li>
+                <li>Save and publish your page to make it live on your store.</li>
+              </ol>
             </div>
 
             <div class="card">
@@ -414,48 +348,78 @@ router.get('/', async (req, res) => {
                     <i class="fas fa-chevron-down"></i>
                   </div>
                   <div class="faq-answer">
-                    <p>To create a new page, click on the "Create Page" button in the dashboard. You can start from scratch or use one of our pre-designed templates. Once in the page builder, you can add elements by dragging them from the left sidebar onto your page.</p>
+                    To create a new page, go to the Pages section and click on the "Create Page" button. You can either start from scratch or choose from our pre-designed templates.
                   </div>
                 </div>
 
                 <div class="faq-item">
                   <div class="faq-question">
-                    How do I publish my page to my Shopify store?
+                    Can I use my own custom code?
                     <i class="fas fa-chevron-down"></i>
                   </div>
                   <div class="faq-answer">
-                    <p>Once you've finished designing your page, click the "Save & Publish" button in the top right corner of the page builder. This will save your page and make it live on your Shopify store. You can also save a draft version by clicking "Save Draft" if you're not ready to publish yet.</p>
+                    Yes, you can add custom CSS and JavaScript to your pages. Go to the Settings section and look for the "Advanced Settings" card where you can add your custom code.
                   </div>
                 </div>
 
                 <div class="faq-item">
                   <div class="faq-question">
-                    Can I use my own custom CSS and JavaScript?
+                    How do I publish my page?
                     <i class="fas fa-chevron-down"></i>
                   </div>
                   <div class="faq-answer">
-                    <p>Yes, you can add custom CSS and JavaScript to your pages. Go to the Settings section and navigate to the Advanced tab. There you'll find fields to enter your custom CSS and JavaScript code that will be applied to all pages created with KingsBuilder.</p>
+                    After creating or editing your page in the builder, click the "Publish" button in the top-right corner. This will make your page live on your Shopify store.
                   </div>
                 </div>
 
                 <div class="faq-item">
                   <div class="faq-question">
-                    How do I add products to my page?
+                    Can I edit a published page?
                     <i class="fas fa-chevron-down"></i>
                   </div>
                   <div class="faq-answer">
-                    <p>In the page builder, you'll find a "Product" element in the Shopify section of the left sidebar. Drag this element onto your page, then click on it to open the properties panel. There you can search for and select products from your store to display on your page.</p>
+                    Yes, you can edit a published page at any time. Go to the Pages section, find the page you want to edit, and click the edit icon. Make your changes and publish again to update the live page.
                   </div>
                 </div>
 
                 <div class="faq-item">
                   <div class="faq-question">
-                    Is KingsBuilder compatible with all Shopify themes?
+                    How do I contact support?
                     <i class="fas fa-chevron-down"></i>
                   </div>
                   <div class="faq-answer">
-                    <p>Yes, KingsBuilder is designed to work with all Shopify themes. The pages you create with KingsBuilder are standalone and will inherit your theme's header and footer, but the content area will be fully controlled by KingsBuilder.</p>
+                    If you need further assistance, please email us at support@kingsbuilder.com or use the chat widget in the bottom-right corner of the screen.
                   </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="card">
+              <div class="card-header">
+                <h3 class="card-title">Video Tutorials</h3>
+              </div>
+
+              <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 20px;">
+                <div>
+                  <div style="background-color: #f0f0f0; height: 180px; display: flex; align-items: center; justify-content: center; margin-bottom: 10px; border-radius: 6px;">
+                    <i class="fas fa-play-circle" style="font-size: 48px;"></i>
+                  </div>
+                  <h4 style="margin-bottom: 5px;">Getting Started with KingsBuilder</h4>
+                  <p style="font-size: 14px; opacity: 0.7;">Learn the basics of using KingsBuilder to create beautiful pages.</p>
+                </div>
+                <div>
+                  <div style="background-color: #f0f0f0; height: 180px; display: flex; align-items: center; justify-content: center; margin-bottom: 10px; border-radius: 6px;">
+                    <i class="fas fa-play-circle" style="font-size: 48px;"></i>
+                  </div>
+                  <h4 style="margin-bottom: 5px;">Advanced Page Building Techniques</h4>
+                  <p style="font-size: 14px; opacity: 0.7;">Take your pages to the next level with advanced features.</p>
+                </div>
+                <div>
+                  <div style="background-color: #f0f0f0; height: 180px; display: flex; align-items: center; justify-content: center; margin-bottom: 10px; border-radius: 6px;">
+                    <i class="fas fa-play-circle" style="font-size: 48px;"></i>
+                  </div>
+                  <h4 style="margin-bottom: 5px;">Using Templates Effectively</h4>
+                  <p style="font-size: 14px; opacity: 0.7;">Learn how to customize templates to match your brand.</p>
                 </div>
               </div>
             </div>
@@ -496,24 +460,13 @@ router.get('/', async (req, res) => {
           }
 
           // FAQ accordion functionality
-          const faqQuestions = document.querySelectorAll('.faq-question');
-
-          faqQuestions.forEach(question => {
+          const faqItems = document.querySelectorAll('.faq-item');
+          
+          faqItems.forEach(item => {
+            const question = item.querySelector('.faq-question');
+            
             question.addEventListener('click', () => {
-              const answer = question.nextElementSibling;
-              const isActive = question.classList.contains('active');
-
-              // Close all other answers
-              document.querySelectorAll('.faq-question').forEach(q => {
-                q.classList.remove('active');
-                q.nextElementSibling.classList.remove('active');
-              });
-
-              // Toggle current answer
-              if (!isActive) {
-                question.classList.add('active');
-                answer.classList.add('active');
-              }
+              item.classList.toggle('active');
             });
           });
         </script>
@@ -525,7 +478,6 @@ router.get('/', async (req, res) => {
     res.status(500).send(`
       <h1>Error</h1>
       <p>An error occurred while loading the help page: ${error.message}</p>
-      <pre>${error.stack}</pre>
     `);
   }
 });

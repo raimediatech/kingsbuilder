@@ -2,11 +2,15 @@
 const express = require('express');
 const router = express.Router();
 
-// Settings home page
-router.get('/', async (req, res) => {
+// Settings page
+router.get('/', (req, res) => {
   try {
-    // Get shop from various possible sources
+    // Get shop from query parameter
     const shop = req.query.shop || req.shopifyShop || req.headers['x-shopify-shop-domain'] || req.cookies?.shopOrigin;
+    
+    if (!shop) {
+      return res.redirect('/install');
+    }
     
     // Set security headers for Shopify iframe embedding
     res.setHeader(
@@ -24,7 +28,7 @@ router.get('/', async (req, res) => {
       <head>
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>KingsBuilder Settings</title>
+        <title>KingsBuilder - Settings</title>
         <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
         <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
         <style>
@@ -35,9 +39,6 @@ router.get('/', async (req, res) => {
             --bg-color: #ffffff;
             --card-bg: #f9f9f9;
             --border-color: #e5e5e5;
-            --success-color: #10b981;
-            --warning-color: #f59e0b;
-            --danger-color: #ef4444;
           }
 
           [data-theme="dark"] {
@@ -47,9 +48,6 @@ router.get('/', async (req, res) => {
             --bg-color: #121212;
             --card-bg: #1e1e1e;
             --border-color: #333333;
-            --success-color: #10b981;
-            --warning-color: #f59e0b;
-            --danger-color: #ef4444;
           }
 
           * {
@@ -205,23 +203,31 @@ router.get('/', async (req, res) => {
 
           .form-label {
             display: block;
-            margin-bottom: 8px;
+            font-size: 14px;
             font-weight: 500;
+            margin-bottom: 8px;
           }
 
           .form-control {
             width: 100%;
-            padding: 10px 15px;
+            padding: 10px;
             border: 1px solid var(--border-color);
             border-radius: 6px;
-            font-size: 14px;
             background-color: var(--bg-color);
             color: var(--text-color);
+            font-size: 14px;
           }
 
           .form-control:focus {
             outline: none;
             border-color: var(--primary-color);
+          }
+
+          .form-text {
+            font-size: 12px;
+            color: var(--text-color);
+            opacity: 0.7;
+            margin-top: 5px;
           }
 
           .form-check {
@@ -234,37 +240,10 @@ router.get('/', async (req, res) => {
             margin-right: 10px;
           }
 
-          .form-text {
-            font-size: 12px;
-            color: var(--text-color);
-            opacity: 0.7;
-            margin-top: 5px;
-          }
-
-          .settings-tabs {
+          .form-actions {
             display: flex;
-            border-bottom: 1px solid var(--border-color);
-            margin-bottom: 20px;
-          }
-
-          .settings-tab {
-            padding: 10px 20px;
-            cursor: pointer;
-            border-bottom: 2px solid transparent;
-            font-weight: 500;
-          }
-
-          .settings-tab.active {
-            border-bottom-color: var(--primary-color);
-            color: var(--primary-color);
-          }
-
-          .tab-content {
-            display: none;
-          }
-
-          .tab-content.active {
-            display: block;
+            justify-content: flex-end;
+            margin-top: 20px;
           }
 
           @media (max-width: 768px) {
@@ -325,103 +304,79 @@ router.get('/', async (req, res) => {
                 <button id="theme-toggle" class="theme-toggle">
                   <i class="fas fa-moon"></i>
                 </button>
-                <button id="save-settings" class="btn">
-                  <i class="fas fa-save"></i>
-                  Save Settings
-                </button>
               </div>
-            </div>
-
-            <div class="settings-tabs">
-              <div class="settings-tab active" data-tab="general">General</div>
-              <div class="settings-tab" data-tab="appearance">Appearance</div>
-              <div class="settings-tab" data-tab="advanced">Advanced</div>
             </div>
 
             <div class="card">
-              <div id="general-tab" class="tab-content active">
-                <div class="form-group">
-                  <label class="form-label">Store Name</label>
-                  <input type="text" class="form-control" value="${shop}" disabled>
-                  <small class="form-text">This is your Shopify store name.</small>
-                </div>
-
-                <div class="form-group">
-                  <label class="form-label">Default Page Title</label>
-                  <input type="text" class="form-control" placeholder="Enter default page title">
-                  <small class="form-text">This title will be used for new pages if no title is specified.</small>
-                </div>
-
-                <div class="form-group">
-                  <label class="form-label">Default Meta Description</label>
-                  <textarea class="form-control" rows="3" placeholder="Enter default meta description"></textarea>
-                  <small class="form-text">This description will be used for SEO if no description is specified.</small>
-                </div>
-
-                <div class="form-group">
-                  <label class="form-check">
-                    <input type="checkbox" class="form-check-input" checked>
-                    Auto-publish pages
-                  </label>
-                  <small class="form-text">When enabled, new pages will be automatically published.</small>
-                </div>
+              <div class="card-header">
+                <h3 class="card-title">General Settings</h3>
               </div>
 
-              <div id="appearance-tab" class="tab-content">
+              <form id="settings-form">
                 <div class="form-group">
-                  <label class="form-label">Theme</label>
-                  <select class="form-control">
-                    <option value="light">Light</option>
-                    <option value="dark">Dark</option>
-                    <option value="system">System Default</option>
+                  <label class="form-label" for="store-name">Store Name</label>
+                  <input type="text" class="form-control" id="store-name" value="${shop.split('.')[0]}">
+                  <div class="form-text">This is your Shopify store name.</div>
+                </div>
+
+                <div class="form-group">
+                  <label class="form-label" for="default-layout">Default Page Layout</label>
+                  <select class="form-control" id="default-layout">
+                    <option value="standard">Standard</option>
+                    <option value="full-width">Full Width</option>
+                    <option value="boxed">Boxed</option>
                   </select>
-                  <small class="form-text">Choose the theme for the KingsBuilder dashboard.</small>
+                  <div class="form-text">Choose the default layout for new pages.</div>
                 </div>
 
                 <div class="form-group">
-                  <label class="form-label">Primary Color</label>
-                  <input type="color" class="form-control" value="#000000">
-                  <small class="form-text">This color will be used for buttons and accents.</small>
+                  <label class="form-label">Page Features</label>
+                  <div class="form-check">
+                    <input type="checkbox" class="form-check-input" id="feature-seo" checked>
+                    <label for="feature-seo">Enable SEO settings for pages</label>
+                  </div>
+                  <div class="form-check">
+                    <input type="checkbox" class="form-check-input" id="feature-analytics" checked>
+                    <label for="feature-analytics">Enable analytics tracking</label>
+                  </div>
+                  <div class="form-check">
+                    <input type="checkbox" class="form-check-input" id="feature-comments">
+                    <label for="feature-comments">Enable comments on pages</label>
+                  </div>
                 </div>
 
-                <div class="form-group">
-                  <label class="form-check">
-                    <input type="checkbox" class="form-check-input" checked>
-                    Show page previews
-                  </label>
-                  <small class="form-text">When enabled, page previews will be shown in the dashboard.</small>
+                <div class="form-actions">
+                  <button type="submit" class="btn">
+                    <i class="fas fa-save"></i> Save Settings
+                  </button>
                 </div>
+              </form>
+            </div>
+
+            <div class="card">
+              <div class="card-header">
+                <h3 class="card-title">Advanced Settings</h3>
               </div>
 
-              <div id="advanced-tab" class="tab-content">
+              <form id="advanced-settings-form">
                 <div class="form-group">
-                  <label class="form-label">Custom CSS</label>
-                  <textarea class="form-control" rows="5" placeholder="Enter custom CSS"></textarea>
-                  <small class="form-text">This CSS will be applied to all pages created with KingsBuilder.</small>
+                  <label class="form-label" for="custom-css">Custom CSS</label>
+                  <textarea class="form-control" id="custom-css" rows="5" placeholder="Enter custom CSS here"></textarea>
+                  <div class="form-text">Add custom CSS to be applied to all your pages.</div>
                 </div>
 
                 <div class="form-group">
-                  <label class="form-label">Custom JavaScript</label>
-                  <textarea class="form-control" rows="5" placeholder="Enter custom JavaScript"></textarea>
-                  <small class="form-text">This JavaScript will be applied to all pages created with KingsBuilder.</small>
+                  <label class="form-label" for="custom-js">Custom JavaScript</label>
+                  <textarea class="form-control" id="custom-js" rows="5" placeholder="Enter custom JavaScript here"></textarea>
+                  <div class="form-text">Add custom JavaScript to be applied to all your pages.</div>
                 </div>
 
-                <div class="form-group">
-                  <label class="form-check">
-                    <input type="checkbox" class="form-check-input">
-                    Enable developer mode
-                  </label>
-                  <small class="form-text">When enabled, additional developer options will be available.</small>
+                <div class="form-actions">
+                  <button type="submit" class="btn">
+                    <i class="fas fa-save"></i> Save Advanced Settings
+                  </button>
                 </div>
-
-                <div class="form-group">
-                  <label class="form-check">
-                    <input type="checkbox" class="form-check-input">
-                    Clear cache
-                  </label>
-                  <small class="form-text">Clear the KingsBuilder cache to resolve any display issues.</small>
-                </div>
-              </div>
+              </form>
             </div>
           </main>
         </div>
@@ -459,27 +414,15 @@ router.get('/', async (req, res) => {
             }
           }
 
-          // Settings tabs functionality
-          const tabs = document.querySelectorAll('.settings-tab');
-          const tabContents = document.querySelectorAll('.tab-content');
-
-          tabs.forEach(tab => {
-            tab.addEventListener('click', () => {
-              const tabId = tab.getAttribute('data-tab');
-              
-              // Remove active class from all tabs and contents
-              tabs.forEach(t => t.classList.remove('active'));
-              tabContents.forEach(c => c.classList.remove('active'));
-              
-              // Add active class to clicked tab and corresponding content
-              tab.classList.add('active');
-              document.getElementById(`${tabId}-tab`).classList.add('active');
-            });
+          // Form submission
+          document.getElementById('settings-form').addEventListener('submit', function(e) {
+            e.preventDefault();
+            alert('Settings saved successfully!');
           });
 
-          // Save settings functionality
-          document.getElementById('save-settings').addEventListener('click', () => {
-            alert('Settings saved successfully!');
+          document.getElementById('advanced-settings-form').addEventListener('submit', function(e) {
+            e.preventDefault();
+            alert('Advanced settings saved successfully!');
           });
         </script>
       </body>
@@ -489,8 +432,7 @@ router.get('/', async (req, res) => {
     console.error('Settings error:', error);
     res.status(500).send(`
       <h1>Error</h1>
-      <p>An error occurred while loading the settings page: ${error.message}</p>
-      <pre>${error.stack}</pre>
+      <p>An error occurred while loading the settings: ${error.message}</p>
     `);
   }
 });
